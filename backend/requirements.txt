@@ -1,0 +1,8 @@
+fastapi
+uvicorn[standard]
+websockets
+sqlalchemy
+python-multipart
+docxtpl
+openai
+python-dotenv

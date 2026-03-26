@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meeting Copilot - DOHWA 교통부문 AI by 철도 4부</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            --primary: #007a5e;
+            --primary-light: #e6f2ef;
+            --primary-dark: #005c47;
+            --accent: #0f86ff;
+            --text-dark: #1f2937;
+            --text-muted: #6b7280;
+            --bg-body: #f8fafc;
+            --bg-card: #ffffff;
+            --border: #e2e8f0;
+        }
+
+        body {
+            font-family: 'Pretendard', 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-body);
+            color: var(--text-dark);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 5%;
+        }
+
+        /* Hero Section */
+        .hero {
+            position: relative;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: white;
+            padding: 100px 0 120px 0;
+            text-align: center;
+            overflow: hidden;
+            border-bottom: 5px solid var(--primary);
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: radial-gradient(circle at 20% 150%, rgba(0, 122, 94, 0.4) 0%, transparent 50%),
+                        radial-gradient(circle at 80% -50%, rgba(15, 134, 255, 0.4) 0%, transparent 50%);
+            z-index: 1;
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 2;
+        }
+
+        .badge {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 6px 16px;
+            border-radius: 30px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            margin-bottom: 24px;
+            color: #8cebc8;
+        }
+
+        .hero h1 {
+            font-size: 4rem;
+            font-weight: 800;
+            margin: 0 0 24px 0;
+            letter-spacing: -1px;
+            line-height: 1.2;
+        }
+
+        .hero h1 span {
+            background: linear-gradient(90deg, #38ef7d 0%, #11998e 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero p {
+            font-size: 1.25rem;
+            font-weight: 300;
+            max-width: 760px;
+            margin: 0 auto;
+            color: #cbd5e1;
+            word-break: keep-all;
+        }
+
+        /* Section Title */
+        .section-header {
+            text-align: center;
+            margin: 80px 0 50px 0;
+        }
+
+        .section-header h2 {
+            font-size: 2.2rem;
+            font-weight: 700;
+            margin: 0 0 16px 0;
+            color: var(--text-dark);
+        }
+
+        .section-header p {
+            font-size: 1.1rem;
+            color: var(--text-muted);
+            margin: 0;
+        }
+
+        /* Grid Layout */
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+            gap: 30px;
+            margin-bottom: 100px;
+            margin-top: -60px; /* Pulls slightly over the hero section */
+            position: relative;
+            z-index: 10;
+        }
+
+        /* Feature Card */
+        .feature-card {
+            background: var(--bg-card);
+            border-radius: 20px;
+            padding: 40px 32px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            border: 1px solid var(--border);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; height: 5px;
+            background: linear-gradient(90deg, var(--primary) 0%, var(--accent) 100%);
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.4s ease;
+        }
+
+        .feature-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .feature-number {
+            position: absolute;
+            top: 20px;
+            right: 24px;
+            font-size: 4rem;
+            font-weight: 800;
+            color: #f1f5f9;
+            line-height: 1;
+            z-index: 0;
+            pointer-events: none;
+            user-select: none;
+        }
+
+        .icon-box {
+            width: 60px;
+            height: 60px;
+            border-radius: 14px;
+            background: var(--primary-light);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 24px;
+            color: var(--primary);
+            position: relative;
+            z-index: 1;
+        }
+
+        .feature-card h3 {
+            font-size: 1.35rem;
+            font-weight: 700;
+            margin: 0 0 16px 0;
+            color: var(--text-dark);
+            position: relative;
+            z-index: 1;
+            letter-spacing: -0.5px;
+        }
+
+        .feature-card p {
+            font-size: 1.05rem;
+            color: var(--text-muted);
+            margin: 0;
+            word-break: keep-all;
+            position: relative;
+            z-index: 1;
+            flex-grow: 1;
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 50px 0;
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            border-top: 1px solid var(--border);
+            margin-top: 40px;
+            background: var(--bg-card);
+        }
+
+        .company-logo {
+            font-weight: 900;
+            color: var(--primary);
+            font-family: 'Inter', sans-serif;
+            letter-spacing: 0.5px;
+            font-size: 1.2rem;
+            margin-bottom: 12px;
+        }
+
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 2.5rem; }
+            .hero p { font-size: 1.1rem; padding: 0 10px; }
+            .features-grid { margin-top: 40px; gap: 20px; }
+            .hero { padding: 80px 0; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Hero Section -->
+    <header class="hero">
+        <div class="container hero-content">
+            <div class="badge">DOHWA 교통부문 AI by 철도 4부</div>
+            <h1>Next-Gen AI 회의 파트너<br><span>Meeting Copilot</span></h1>
+            <p>단순한 음성 기록을 넘어 최고의 회의 결과물을 도출합니다. 압도적인 인식률, AI 지능형 분석, 그리고 회사 양식 맞춤형 다운로드까지 단 하나의 강력한 파트너와 함께 하세요.</p>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- Section: Features Grid -->
+        <div class="features-grid">
+            
+            <!-- 1 -->
+            <div class="feature-card">
+                <div class="feature-number">1</div>
+                <div class="icon-box">
+                    <i data-lucide="mic" style="width: 28px; height: 28px;"></i>
+                </div>
+                <h3>최고 수준의 실시간 STT</h3>
+                <p>OpenAI의 강력한 Whisper 엔진을 탑재하여 현존하는 가장 뛰어난 한/영/폴란드어 무손실 실시간 음성-텍스트 변환을 제공합니다. 30초 무음 감지(VAD) 기술로 리소스를 스스로 관리합니다.</p>
+            </div>
+
+            <!-- 2 -->
+            <div class="feature-card">
+                <div class="feature-number">2</div>
+                <div class="icon-box">
+                    <i data-lucide="brain-circuit" style="width: 28px; height: 28px;"></i>
+                </div>
+                <h3>GPT-4o 지능형 맥락 분석</h3>
+                <p>몇 시간이 넘는 기나긴 회의 스크립트도 단 5초 만에 [회의 개요] - [주요 안건] - [참석자별 세부 논의 사항]으로 완벽히 구조화된 전문적인 마크다운 요약 리포트로 창출해 냅니다.</p>
+            </div>
+
+            <!-- 3 -->
+            <div class="feature-card">
+                <div class="feature-number">3</div>
+                <div class="icon-box">
+                    <i data-lucide="book-open" style="width: 28px; height: 28px;"></i>
+                </div>
+                <h3>나만의 맞춤 사전 (저장/불러오기)</h3>
+                <p>엔지니어링 업계 특유의 고유 명사와 자주 쓰는 시스템 이름 등을 등록해 두면, AI가 발음을 강제 교정하여 완벽하게 입력해 줍니다. 텍스트 파일(.txt)로 저장하고 원클릭으로 쉽게 불러오세요.</p>
+            </div>
+
+            <!-- 4 -->
+            <div class="feature-card">
+                <div class="feature-number">4</div>
+                <div class="icon-box">
+                    <i data-lucide="languages" style="width: 28px; height: 28px;"></i>
+                </div>
+                <h3>한계 없는 실시간 동시 통역</h3>
+                <p>한국어, 영어, 폴란드어가 복합적으로 얽히는 글로벌 비즈니스 미팅도 문제없습니다. 설정한 양방향 통역 지시에 따라 발언이 끝남과 동시에 [원문]과 세련된 [번역본]이 즉시 화면에 타이핑됩니다.</p>
+            </div>
+
+            <!-- 5 -->
+            <div class="feature-card">
+                <div class="feature-number">5</div>
+                <div class="icon-box">
+                    <i data-lucide="file-output" style="width: 28px; height: 28px;"></i>
+                </div>
+                <h3>회사 양식을 적용한 회의록 작성(진행중)</h3>
+                <p>서식 없는 메모장에 복사하실 필요가 없습니다. 미리 지정된 깔끔한 회사 공식 상용구 포맷에 맞추어 버튼 한 번에 내 컴퓨터 지정 폴더로 PDF 및 Word(.docx) 회의록을 곧바로 다운로드합니다.</p>
+            </div>
+
+            <!-- 6 -->
+            <div class="feature-card">
+                <div class="feature-number">6</div>
+                <div class="icon-box">
+                    <i data-lucide="monitor-smartphone" style="width: 28px; height: 28px;"></i>
+                </div>
+                <h3>스마트 기기 완벽 대응 하이브리드 UX</h3>
+                <p>회의 테이블 중앙에 스마트폰을 두거나 현장 점검, 외근 시 태블릿을 들고 다니면서도 끊김 없이 기록을 컨트롤할 수 있는 '모바일 환경'을 지원합니다.</p>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="company-logo">DOHWA</div>
+            <p>교통부문 AI by 철도 4부 &copy; 2026. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>
