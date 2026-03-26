@@ -11,9 +11,9 @@ services:
       - key: PYTHON_VERSION
         value: 3.10.0
 
+static_sites:
   # Frontend (Vite)
-  - type: static_site
-    name: meeting-copilot-frontend
+  - name: meeting-copilot-frontend
     env: static
     buildCommand: cd frontend && npm install && npm run build
     publishPath: frontend/dist
