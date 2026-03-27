@@ -71,13 +71,13 @@ async def websocket_record(websocket: WebSocket):
                     current_client = AsyncOpenAI(api_key=api_key)
                     
                     if input_lang == "ko":
-                        prompt_hint = "진지한 비즈니스 회의입니다. 들리는 그대로 정확히 한국어로만 작성하세요. 이모티콘(Emoji)이나 '구독과 좋아요' 같은 문구는 절대 추가하지 마세요."
+                        prompt_hint = "회의 녹취록입니다. 들리는 그대로 정확히 한국어로만 작성하세요. '구독과 좋아요', '알림 설정', '시청해주셔서 감사합니다' 같은 문구는 절대 추가하지 마세요. 오직 참석자들의 발언만 기록하세요."
                     elif input_lang == "en":
-                        prompt_hint = "This is an English meeting recording. Transcribe exactly what you hear in English only."
+                        prompt_hint = "This is a formal meeting recording. Transcribe exactly what is spoken in English only. Do NOT add irrelevant phrases like 'Thanks for watching' or 'Subscribe to my channel'."
                     elif input_lang == "pl":
-                        prompt_hint = "To jest nagranie ze spotkania w języku polskim. Dokładnie zrób transkrypcję tylko po polsku."
+                        prompt_hint = "To jest nagranie ze spotkania. Dokładnie zrób transkrypcję tylko po polsku. Nie dodawaj żadnych zbędnych fraz."
                     else:
-                        prompt_hint = "Transcribe exactly what is spoken."
+                        prompt_hint = "Transcribe exactly what is spoken. Do NOT add irrelevant phrases."
                         
                     if custom_vocab:
                         prompt_hint += f" 자주 쓰이는 핵심 고유명사/전문용어: {custom_vocab}"
@@ -98,6 +98,8 @@ async def websocket_record(websocket: WebSocket):
                     # 명백한 환각 직접 제거
                     original_text = original_text.replace("구독과 좋아요 부탁드립니다", "")
                     original_text = original_text.replace("구독과 좋아요", "")
+                    original_text = original_text.replace("구독, 좋아요, 알림설정 부탁드립니다", "")
+                    original_text = original_text.replace("구독, 좋아요, 알림 설정 부탁드립니다", "")
                     original_text = original_text.replace("시청해주셔서 감사합니다", "")
                     original_text = original_text.strip()
                     
@@ -107,10 +109,15 @@ async def websocket_record(websocket: WebSocket):
                         "시청해주셔서감사합니다", 
                         "구독과좋아요부탁드립니다",
                         "구독과좋아요",
+                        "구독좋아요",
+                        "알림설정부탁드립니다",
+                        "구독좋아요알림설정부탁드립니다",
+                        "구독좋아요알림설정",
                         "시청해주셔서고맙습니다",
+                        "관심가져주셔서감사합니다",
                         "자막제작"
                     ]
-                    if any(h in hw_filter for h in hallucinations) and len(original_text) < 30:
+                    if any(h in hw_filter for h in hallucinations) and len(original_text) < 40:
                         continue
                         
                     if not original_text:
