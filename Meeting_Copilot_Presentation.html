@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meeting Copilot Presentation</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-glow: rgba(99, 102, 241, 0.5);
+            --bg-dark: #0f172a;
+            --accent: #10b981;
+            --glass: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-dark);
+            color: white;
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        h1, h2, h3 {
+            font-family: 'Outfit', sans-serif;
+            letter-spacing: -0.02em;
+        }
+
+        .presentation-container {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            transition: transform 0.8s cubic-bezier(0.645, 0.045, 0.355, 1);
+        }
+
+        .slide {
+            min-width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 4rem;
+            position: relative;
+            background: radial-gradient(circle at 50% 50%, rgba(30, 41, 59, 1) 0%, rgba(15, 23, 42, 1) 100%);
+        }
+
+        /* Particles/Decorations */
+        .slide::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: radial-gradient(var(--primary-glow) 1px, transparent 1px);
+            background-size: 50px 50px;
+            opacity: 0.1;
+            pointer-events: none;
+        }
+
+        .slide-content {
+            z-index: 10;
+            max-width: 1000px;
+            width: 100%;
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.6s ease 0.3s;
+        }
+
+        .active .slide-content {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Logo Style */
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--primary);
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: var(--primary);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 20px var(--primary-glow);
+        }
+
+        /* Typography */
+        .title {
+            font-size: 5rem;
+            font-weight: 800;
+            line-height: 1.1;
+            margin-bottom: 1.5rem;
+            background: linear-gradient(to right, #fff, #94a3b8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle {
+            font-size: 1.5rem;
+            color: #94a3b8;
+            margin-bottom: 3rem;
+        }
+
+        .slide-title {
+            font-size: 3.5rem;
+            font-weight: 700;
+            margin-bottom: 2rem;
+            color: var(--primary);
+        }
+
+        /* Features List */
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .feature-card {
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            padding: 2rem;
+            border-radius: 24px;
+            backdrop-filter: blur(12px);
+            transition: all 0.3s ease;
+        }
+
+        .feature-card:hover {
+            border-color: var(--primary);
+            transform: translateY(-10px);
+            background: rgba(99, 102, 241, 0.05);
+        }
+
+        .feature-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .feature-card h3 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: white;
+        }
+
+        .feature-card p {
+            color: #94a3b8;
+            line-height: 1.6;
+        }
+
+        /* Stats Section */
+        .stats-row {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 4rem;
+        }
+
+        .stat-item h4 {
+            font-size: 3.5rem;
+            color: var(--accent);
+            margin-bottom: 0.5rem;
+        }
+
+        /* Controls */
+        .controls {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            display: flex;
+            gap: 15px;
+            z-index: 100;
+        }
+
+        .control-btn {
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            color: white;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        .control-btn:hover {
+            background: var(--primary);
+            border-color: var(--primary);
+        }
+
+        .progress-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            height: 4px;
+            background: var(--primary);
+            transition: width 0.3s ease;
+            z-index: 1000;
+        }
+
+        /* Animations */
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4); }
+            70% { box-shadow: 0 0 0 20px rgba(99, 102, 241, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); }
+        }
+
+        .btn-primary {
+            display: inline-block;
+            padding: 1rem 2.5rem;
+            background: var(--primary);
+            color: white;
+            text-decoration: none;
+            border-radius: 50px;
+            font-weight: 600;
+            margin-top: 2rem;
+            animation: pulse 2s infinite;
+        }
+
+        /* Tech Badges */
+        .tech-badges {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .badge {
+            padding: 0.5rem 1.2rem;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 10px;
+            font-size: 0.9rem;
+            color: #cbd5e1;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="progress-bar" id="progress"></div>
+
+    <div class="presentation-container" id="container">
+        <!-- Slide 1: Cover -->
+        <section class="slide active">
+            <div class="slide-content">
+                <div class="logo">
+                    <div class="logo-icon">🎙️</div>
+                    MEETING COPILOT
+                </div>
+                <h1 class="title">미팅의 모든 순간을<br>가장 똑똑하게 기록하다</h1>
+                <p class="subtitle">AI 기반 실시간 회의록 작성 및 분석 솔루션</p>
+                <div class="tech-badges">
+                    <span class="badge">OpenAI Whisper</span>
+                    <span class="badge">GPT-4o</span>
+                    <span class="badge">FastAPI</span>
+                    <span class="badge">Vite</span>
+                </div>
+                <a href="#" class="btn-primary" onclick="nextSlide()">프레젠테이션 시작</a>
+            </div>
+        </section>
+
+        <!-- Slide 2: Problem -->
+        <section class="slide">
+            <div class="slide-content">
+                <h2 class="slide-title">왜 Meeting Copilot인가?</h2>
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon">⏳</div>
+                        <h3>비효율적인 기록</h3>
+                        <p>회의 종료 후 다시 녹음을 들으며 작성하는 번거로운 과정</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">📉</div>
+                        <h3>누락되는 정보</h3>
+                        <p>중요한 의사결정이나 액션 아이템이 기록에서 빠지는 상황</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">🌐</div>
+                        <h3>언어의 장벽</h3>
+                        <p>다국어 환경에서의 원활한 회의록 공유와 이해의 어려움</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 3: Core Features -->
+        <section class="slide">
+            <div class="slide-content">
+                <h2 class="slide-title">핵심 기능 (Core Features)</h2>
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon">⚡</div>
+                        <h3>실시간 STT</h3>
+                        <p>Whisper 모델을 통한 압도적인 정확도의 실시간 음성인식</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">🤖</div>
+                        <h3>AI 스마트 요약</h3>
+                        <p>GPT-4o가 안건별 핵심 내용을 완벽하게 구조화하여 리포트 생성</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">🌏</div>
+                        <h3>다국어 지원</h3>
+                        <p>한국어, 영어, 폴란드어 등 실시간 번역 및 다국어 스크립트 제공</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 4: Real-time Analysis -->
+        <section class="slide">
+            <div class="slide-content">
+                <h2 class="slide-title">AI가 작성하는 완벽한 리포트</h2>
+                <p class="subtitle" style="margin-bottom: 1rem;">회의 직후, 당신은 리포트만 확인하세요.</p>
+                <div class="feature-card" style="max-width: 800px; margin-top: 2rem;">
+                    <ul style="list-style: none; color: #cbd5e1;">
+                        <li style="margin-bottom: 1rem;">✅ <b>회의 개요:</b> 주제, 참석자, 시간, 장소 자동 파악</li>
+                        <li style="margin-bottom: 1rem;">✅ <b>주요 안건:</b> 핵심 논의 주제들을 카테고리별 분류</li>
+                        <li style="margin-bottom: 1rem;">✅ <b>세부 논의:</b> 각 안건에 대한 결정 사항 및 이슈 정리</li>
+                        <li>✅ <b>스크리닝:</b> 음성인식 오류(환각)를 AI가 판단하여 제거</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 5: Tech Stack -->
+        <section class="slide">
+            <div class="slide-content">
+                <h2 class="slide-title">Modern Tech Stack</h2>
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <h3>Frontend</h3>
+                        <p>TypeScript / Vite / Vanilla UI</p>
+                        <p style="font-size: 0.8rem; margin-top: 10px;">반응형 웹 UI, 실시간 오디오 스트리밍 처리</p>
+                    </div>
+                    <div class="feature-card">
+                        <h3>Backend</h3>
+                        <p>FastAPI / Python</p>
+                        <p style="font-size: 0.8rem; margin-top: 10px;">Asynchronous WebSocket 통신, 고성능 API 처리</p>
+                    </div>
+                    <div class="feature-card">
+                        <h3>AI / Infra</h3>
+                        <p>OpenAI / Render.com</p>
+                        <p style="font-size: 0.8rem; margin-top: 10px;">Whisper-1, GPT-4o 연동, 클라우드 글로벌 배포</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 6: Result -->
+        <section class="slide">
+            <div class="slide-content">
+                <h2 class="slide-title">업무의 혁신, 그 이상의 가치</h2>
+                <div class="stats-row">
+                    <div class="stat-item">
+                        <h4>95%</h4>
+                        <p>기록 시간 단축</p>
+                    </div>
+                    <div class="stat-item">
+                        <h4>100%</h4>
+                        <p>정확한 정보 수집</p>
+                    </div>
+                    <div class="stat-item">
+                        <h4>0%</h4>
+                        <p>불필요한 리소스 낭비</p>
+                    </div>
+                </div>
+                <div style="margin-top: 5rem; text-align: center;">
+                    <p style="font-size: 1.2rem; color: #94a3b8;">지금 바로 시작해 보세요.</p>
+                    <h3 style="font-size: 2rem; margin-top: 1rem;">Meeting Copilot</h3>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <div class="controls">
+        <div class="control-btn" id="prev" onclick="prevSlide()">←</div>
+        <div class="control-btn" id="next" onclick="nextSlide()">→</div>
+    </div>
+
+    <script>
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+        const totalSlides = slides.length;
+        const container = document.getElementById('container');
+        const progress = document.getElementById('progress');
+
+        function updateSlide() {
+            container.style.transform = `translateX(-${currentSlide * 100}vw)`;
+            slides.forEach((s, i) => {
+                if(i === currentSlide) s.classList.add('active');
+                else s.classList.remove('active');
+            });
+            progress.style.width = `${((currentSlide + 1) / totalSlides) * 100}%`;
+        }
+
+        function nextSlide() {
+            if (currentSlide < totalSlides - 1) {
+                currentSlide++;
+                updateSlide();
+            }
+        }
+
+        function prevSlide() {
+            if (currentSlide > 0) {
+                currentSlide--;
+                updateSlide();
+            }
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight' || e.key === 'Space') nextSlide();
+            if (e.key === 'ArrowLeft') prevSlide();
+        });
+
+        // Initialize
+        updateSlide();
+    </script>
+</body>
+</html>
