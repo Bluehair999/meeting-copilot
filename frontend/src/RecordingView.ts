@@ -136,7 +136,10 @@ export function renderRecordingView(container: HTMLElement) {
       });
       // Show mobile-specific warning
       const tip = document.getElementById('mobile-mic-tip');
-      if (tip) tip.classList.remove('hidden');
+      if (tip) {
+        tip.classList.remove('hidden');
+        tip.innerHTML = `💡 모바일 환경: 주변 음성 인식을 위해 <b>스피커폰 모드(고감도)</b>를 자동 요청합니다.`;
+      }
     } else {
       sourceModeSelect.value = 'both';
       Array.from(sourceModeSelect.options).forEach(opt => {
@@ -289,7 +292,14 @@ export function renderRecordingView(container: HTMLElement) {
   async function populateMicrophones(forceRequest = false) {
     if (hasPopulatedMics && !forceRequest) return;
     try {
-      const initialStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      // 고감도/스피커폰 모드 유도를 위한 최적 옵션 적용
+      const audioConstraints: MediaTrackConstraints = {
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true
+      };
+      
+      const initialStream = await navigator.mediaDevices.getUserMedia({ audio: audioConstraints });
       const devices = await navigator.mediaDevices.enumerateDevices();
       micSelect.innerHTML = '';
       const audioInputs = devices.filter(d => d.kind === 'audioinput');
@@ -357,9 +367,15 @@ export function renderRecordingView(container: HTMLElement) {
 
     try {
       if (sourceMode === 'mic' || sourceMode === 'both') {
-        const micStream = await navigator.mediaDevices.getUserMedia({ 
-          audio: deviceId ? { deviceId: { exact: deviceId } } : true 
-        });
+        const audioConstraints: MediaTrackConstraints = {
+          deviceId: deviceId ? { exact: deviceId } : undefined,
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+          sampleRate: { ideal: 48000 }
+        };
+        
+        const micStream = await navigator.mediaDevices.getUserMedia({ audio: audioConstraints });
         activeStreams.push(micStream);
         const micSource = audioContext.createMediaStreamSource(micStream);
         micSource.connect(dest);
