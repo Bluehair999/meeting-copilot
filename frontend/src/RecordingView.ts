@@ -21,6 +21,9 @@ export function renderRecordingView(container: HTMLElement) {
             <select id="mic-select" class="hidden" style="min-width: 150px; font-size: 0.85rem; padding: 0.4rem 0.5rem;">
               <option value="">권한 허용 필요</option>
             </select>
+            <label id="high-sensitivity-wrapper" style="display: flex; align-items: center; gap: 0.3rem; font-size: 0.85rem; cursor: pointer; color: var(--primary-color);">
+              <input type="checkbox" id="chk-high-sensitivity" checked /> 고감도(회의용)
+            </label>
           </div>
           <div id="mobile-mic-tip" class="hidden" style="font-size: 0.75rem; color: var(--accent-color); background: rgba(var(--accent-rgb), 0.1); padding: 0.3rem 0.6rem; border-radius: 4px; border: 1px solid var(--accent-color);">
             💡 모바일에서는 <b>이어폰/헤드셋</b> 사용 시 인식률이 가장 좋습니다.
@@ -124,6 +127,11 @@ export function renderRecordingView(container: HTMLElement) {
   const timeVal = document.getElementById('time-val')!;
   const micSelect = document.getElementById('mic-select') as HTMLSelectElement;
   const sourceModeSelect = document.getElementById('source-mode') as HTMLSelectElement;
+  const chkHighSensitivity = document.getElementById('chk-high-sensitivity') as HTMLInputElement;
+
+  chkHighSensitivity.addEventListener('change', () => {
+    appState.useHighSensitivity = chkHighSensitivity.checked;
+  });
   
   function applyEnvMode() {
     if (appState.isMobileMode) {
@@ -136,9 +144,12 @@ export function renderRecordingView(container: HTMLElement) {
       });
       // Show mobile-specific warning
       const tip = document.getElementById('mobile-mic-tip');
+      const isIphone = /iPhone/i.test(navigator.userAgent);
       if (tip) {
         tip.classList.remove('hidden');
-        tip.innerHTML = `💡 모바일 환경: 주변 음성 인식을 위해 <b>스피커폰 모드(고감도)</b>를 자동 요청합니다.`;
+        tip.innerHTML = isIphone 
+          ? `💡 iPhone 팁: 제어 센터(우상단 스와이프) > <b>마이크 모드</b> > <b>'와이드 스펙트럼'</b>을 선택하면 주변 소리를 가장 잘 인식합니다.` 
+          : `💡 모바일 환경: 주변 소리 인식을 위해 <b>고감도(회의용) 모드</b> 사용을 권장합니다.`;
       }
     } else {
       sourceModeSelect.value = 'both';
@@ -292,11 +303,11 @@ export function renderRecordingView(container: HTMLElement) {
   async function populateMicrophones(forceRequest = false) {
     if (hasPopulatedMics && !forceRequest) return;
     try {
-      // 고감도/스피커폰 모드 유도를 위한 최적 옵션 적용
+      // 고감도/스피커폰 모드 유도를 위한 옵션 적용 (사용자 선택에 따라 다름)
       const audioConstraints: MediaTrackConstraints = {
-        echoCancellation: true,
-        noiseSuppression: true,
-        autoGainControl: true
+        echoCancellation: appState.useHighSensitivity,
+        noiseSuppression: appState.useHighSensitivity,
+        autoGainControl: appState.useHighSensitivity
       };
       
       const initialStream = await navigator.mediaDevices.getUserMedia({ audio: audioConstraints });
@@ -369,9 +380,9 @@ export function renderRecordingView(container: HTMLElement) {
       if (sourceMode === 'mic' || sourceMode === 'both') {
         const audioConstraints: MediaTrackConstraints = {
           deviceId: deviceId ? { exact: deviceId } : undefined,
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true,
+          echoCancellation: appState.useHighSensitivity,
+          noiseSuppression: appState.useHighSensitivity,
+          autoGainControl: appState.useHighSensitivity,
           sampleRate: { ideal: 48000 }
         };
         

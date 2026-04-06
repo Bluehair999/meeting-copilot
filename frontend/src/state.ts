@@ -3,5 +3,6 @@ export const appState = {
   script: "",
   analysisResult: "",
   openaiApiKey: "",
-  isMobileMode: /Mobi|Android|iPhone/i.test(navigator.userAgent) || (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia)
+  isMobileMode: /Mobi|Android|iPhone/i.test(navigator.userAgent) || (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia),
+  useHighSensitivity: true // 기본값: 고감도(스피커폰) 모드 활성화
 };
