@@ -53,6 +53,15 @@ async def websocket_record(websocket: WebSocket):
                 
         while True:
             message = await websocket.receive()
+            if "text" in message:
+                try:
+                    data = json.loads(message["text"])
+                    if data.get("type") == "ping":
+                        await websocket.send_json({"type": "pong"})
+                        continue
+                except:
+                    pass
+
             if "bytes" in message:
                 audio_data = message["bytes"]
                 if len(audio_data) < 1000:
@@ -87,7 +96,8 @@ async def websocket_record(websocket: WebSocket):
                             model="whisper-1", 
                             file=audio_file,
                             language=input_lang,
-                            prompt=prompt_hint
+                            prompt=prompt_hint,
+                            temperature=0.0
                         )
                     
                     original_text = transcript.text.strip()
@@ -247,14 +257,20 @@ async def analyze_script(req: AnalyzeRequest):
         except Exception as e:
             result = f"[Analysis Error] GPT-4o 분석 중 오류가 발생했습니다: {str(e)}"
     else:
-        # Full Report (원문 스크리닝)
+        # Full Report (원문 스크리닝 및 화자 구분)
+        participants_hint = f"참석자 명단: {', '.join(req.participants)}" if req.participants else "참석자 명단이 제공되지 않았습니다. 문맥을 통해 화자를 추측하거나 '화자 1, 2' 등으로 표기하세요."
+        
         user_prompt = f"""다음은 회의 중 녹음된 원본 음성 인식(STT) 스크립트입니다.
-당신의 역할은 이 원본 스크립트의 대화 내용(문맥, 어투, 정보 등)은 100% 그대로 유지하되, 음성 인식 기계의 오류로 발생한 명백한 환각(Hallucinations)이나 전혀 의미 없는 잡음, 혹은 맥락과 전혀 맞지 않는 기계적 치찰음만 살짝 제거하는 가벼운 스크리닝을 수행하는 것입니다.
+당신의 역할은 두 가지입니다:
+1. **스크리닝**: 음성 인식 오류로 발생한 명백한 환각(Hallucinations)이나 잡음, 무의미한 문장을 제거하되, 대화 내용은 100% 보존하세요.
+2. **화자 구분**: 대화 문맥과 아래 제공된 참석자 명단을 바탕으로, 각 발언의 화자를 판단하여 [이름] 또는 [화자 N] 형식으로 문장 앞에 붙여주세요.
+
+{participants_hint}
 
 [지침]
-1. 화자의 대화 내용이나 어투, 문장 구조는 절대 무단으로 요약하거나 변경하지 마세요. (원본 내용을 최대한 100% 보존)
-2. 명백히 오작동으로 보이는 무의미한 문장(예: "시청해주셔서 감사합니다", 불필요한 단어 무한 반복 등)만 조용히 삭제하세요.
-3. 결과물은 스크리닝이 완료된 텍스트만 출력하세요. (인삿말이나 추가 설명 절대 금지)
+- 화자의 대화 내용이나 어투는 절대 수정하거나 요약하지 마세요. (원본 보존 원칙)
+- 각 발언이 바뀔 때마다 줄바꿈을 하고 화자 이름을 표시하세요.
+- 결과물은 스크리닝과 화자 구분이 완료된 텍스트만 출력하세요. (추가 설명 금지)
 
 [회의록 원본]
 {req.script}
@@ -268,7 +284,7 @@ async def analyze_script(req: AnalyzeRequest):
                 ]
             )
             screened_script = completion.choices[0].message.content.strip()
-            result = f"## 🎙️ 전체 회의 스크립트 (AI 스크리닝 완료)\n\n{screened_script}"
+            result = f"## 🎙️ 전체 회의 스크립트 (AI 화자 구분 및 스크리닝 완료)\n\n{screened_script}"
         except Exception as e:
             result = f"[Analysis Error] GPT 스크리닝 중 오류가 발생했습니다: {str(e)}\n\n## 🎙️ 100% 원본 스크립트\n\n{req.script}"
         

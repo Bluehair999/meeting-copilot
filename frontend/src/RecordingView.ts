@@ -22,6 +22,9 @@ export function renderRecordingView(container: HTMLElement) {
               <option value="">권한 허용 필요</option>
             </select>
           </div>
+          <div id="mobile-mic-tip" class="hidden" style="font-size: 0.75rem; color: var(--accent-color); background: rgba(var(--accent-rgb), 0.1); padding: 0.3rem 0.6rem; border-radius: 4px; border: 1px solid var(--accent-color);">
+            💡 모바일에서는 <b>이어폰/헤드셋</b> 사용 시 인식률이 가장 좋습니다.
+          </div>
           <div class="lang-group" style="display: flex; gap: 0.5rem; align-items: center; background: var(--surface-color); padding: 0.3rem 0.5rem; border-radius: 4px; border: 1px solid var(--border-color);">
             <div style="display: flex; align-items: center; gap: 0.3rem;">
               <span style="font-size: 0.75rem; color: var(--text-muted);">입력:</span>
@@ -87,7 +90,7 @@ export function renderRecordingView(container: HTMLElement) {
 
       <div class="recording-footer" style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem;">
         <div class="text-sm" id="timeout-display" style="color: var(--danger-color); font-weight: bold; opacity: 0; display: flex; align-items: center; gap: 0.5rem;">
-          <i data-lucide="volume-2" style="width: 16px;"></i> Voice Activity Timeout: <span id="time-val">30</span>s
+          <i data-lucide="volume-2" style="width: 16px;"></i> Voice Activity Timeout: <span id="time-val">60</span>s
         </div>
         <div class="action-buttons" style="display: flex; align-items: center; gap: 1rem;">
           <div id="visualizer-container" class="hidden" style="display: flex; align-items: center; gap: 4px; height: 24px; min-width: 40px;">
@@ -131,12 +134,17 @@ export function renderRecordingView(container: HTMLElement) {
           if (!opt.text.includes('(미지원)')) opt.text += ' (미지원)';
         }
       });
+      // Show mobile-specific warning
+      const tip = document.getElementById('mobile-mic-tip');
+      if (tip) tip.classList.remove('hidden');
     } else {
       sourceModeSelect.value = 'both';
       Array.from(sourceModeSelect.options).forEach(opt => {
         opt.disabled = false;
         opt.text = opt.text.replace(' (미지원)', '');
       });
+      const tip = document.getElementById('mobile-mic-tip');
+      if (tip) tip.classList.add('hidden');
     }
   }
 
@@ -210,8 +218,9 @@ export function renderRecordingView(container: HTMLElement) {
   
   let isRecording = false;
   let ws: WebSocket | null = null;
-  let timeRemaining = 30;
+  let timeRemaining = 60;
   let countdownInterval: number | null = null;
+  let heartbeatInterval: number | null = null;
   
   // Web Audio Tracking
   let audioContext: AudioContext;
@@ -435,7 +444,7 @@ export function renderRecordingView(container: HTMLElement) {
 
   function startVADTimer() {
     clearVADTimer();
-    timeRemaining = 30;
+    timeRemaining = 60;
     timeoutDisplay.style.opacity = '1';
     timeVal.innerText = timeRemaining.toString();
     
@@ -448,6 +457,7 @@ export function renderRecordingView(container: HTMLElement) {
 
   function clearVADTimer() {
     if (countdownInterval) window.clearInterval(countdownInterval);
+    if (heartbeatInterval) window.clearInterval(heartbeatInterval);
     timeoutDisplay.style.opacity = '0';
   }
 
@@ -530,12 +540,9 @@ export function renderRecordingView(container: HTMLElement) {
       const tlText = translateLang === 'none' ? '없음' : translateLangSelect.options[translateLangSelect.selectedIndex].text;
       addScriptLine(`[System] AI 연결 완료 (입력: ${inputLangSelect.options[inputLangSelect.selectedIndex].text}, 번역: ${tlText}). 오디오 분석 시작...`);
       
-      // Every 5 seconds, send an audio chunk
-      recorderInterval = window.setInterval(() => {
-        if (!isRecording || !stream) {
-          if (recorderInterval) clearInterval(recorderInterval);
-          return;
-        }
+      // Every 12 seconds, send an audio chunk (sequentially to avoid overlaps)
+      const startNextRecording = () => {
+        if (!isRecording || !stream || !ws || ws.readyState !== WebSocket.OPEN) return;
         
         try {
           const recorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
@@ -547,13 +554,26 @@ export function renderRecordingView(container: HTMLElement) {
                 const buffer = await blob.arrayBuffer();
                 ws.send(buffer);
              }
+             // Start next chunk after current one finished
+             if (isRecording) setTimeout(startNextRecording, 100); 
           };
           recorder.start();
-          setTimeout(() => { if (recorder.state === "recording") recorder.stop(); }, 5000);
+          // Decrease a bit to 11.5s to ensure better sequencing if needed
+          setTimeout(() => { try { if (recorder.state === "recording") recorder.stop(); } catch(e) {} }, 11500);
         } catch (err) {
           console.error("MediaRecorder error", err);
+          if (isRecording) setTimeout(startNextRecording, 1000);
         }
-      }, 5000);
+      };
+      
+      startNextRecording();
+
+      // Application level Heartbeat to prevent 30-min connection drop
+      heartbeatInterval = window.setInterval(() => {
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ type: "ping" }));
+        }
+      }, 30000);
 
       startVADTimer();
     };

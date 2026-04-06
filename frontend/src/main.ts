@@ -18,7 +18,6 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
       <div style="font-size: 0.8rem; color: var(--text-muted); display: flex; align-items: center; gap: 0.5rem; padding-left: 2rem;">
         <span style="font-weight: 900; color: #007a5e; letter-spacing: 0.5px; font-family: sans-serif;">DOHWA</span>
         <span style="font-weight: 600; color: var(--accent-color);">교통부문 AI</span>
-        <span style="opacity: 0.6;">by 철도 4부</span>
       </div>
     </div>
     <div id="status-indicator" class="text-sm api-controls" style="display: flex; align-items: center; gap: 0.5rem;">
