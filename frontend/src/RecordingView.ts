@@ -148,7 +148,7 @@ export function renderRecordingView(container: HTMLElement) {
       if (tip) {
         tip.classList.remove('hidden');
         tip.innerHTML = isIphone 
-          ? `💡 iPhone 팁: 제어 센터(우상단 스와이프) > <b>마이크 모드</b> > <b>'와이드 스펙트럼'</b>을 선택하면 주변 소리를 가장 잘 인식합니다.` 
+          ? `🔥 iPhone 부스트 활성: 제어 센터(우상단 스와이프) > <b>마이크 모드</b> > <b>'와이드 스펙트럼'</b>을 선택하면 주변 소리를 가장 잘 인식합니다.` 
           : `💡 모바일 환경: 주변 소리 인식을 위해 <b>고감도(회의용) 모드</b> 사용을 권장합니다.`;
       }
     } else {
@@ -424,6 +424,16 @@ export function renderRecordingView(container: HTMLElement) {
     
     const mixedSource = audioContext.createMediaStreamSource(stream);
     mixedSource.connect(analyser);
+
+    // iPhone High-Sensitivity Boost (AEC / Wide Spectrum Trigger)
+    const isIphone = /iPhone/i.test(navigator.userAgent);
+    if (isIphone && appState.useHighSensitivity) {
+      const boostGain = audioContext.createGain();
+      boostGain.gain.value = 0.001; // 들리지 않을 정도로 아주 작음
+      mixedSource.connect(boostGain);
+      boostGain.connect(audioContext.destination);
+      console.log("iPhone High-Sensitivity Boost Active (Silent Loop)");
+    }
     
     const dataArray = new Uint8Array(analyser.frequencyBinCount);
     const bars = document.querySelectorAll('#visualizer-container .bar') as NodeListOf<HTMLElement>;
