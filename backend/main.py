@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY", "dummy_key"))
+# client instance is now created per-request with the user's API key
 
 app = FastAPI(title="Meeting Copilot API")
 
@@ -72,9 +72,10 @@ async def websocket_record(websocket: WebSocket):
                     tmp_path = tmp.name
                 
                 try:
-                    api_key = ws_api_key or os.getenv("OPENAI_API_KEY", "dummy_key")
-                    if not api_key or api_key in ["dummy_key", "your_api_key_here"]:
-                        await websocket.send_json({"text": "[System API Key Required] 화면 상단의 API Key 입력창에 실제 OPENAI_API_KEY를 입력해주세요."})
+                    # Use provided key only
+                    api_key = ws_api_key
+                    if not api_key:
+                        await websocket.send_json({"text": "[API Key Required] 화면 상단의 API Key 입력창에 실제 OPENAI_API_KEY를 입력하고 Confirm을 눌러주세요."})
                         continue
                         
                     current_client = AsyncOpenAI(api_key=api_key)
@@ -179,9 +180,9 @@ class AnalyzeRequest(BaseModel):
 
 @app.post("/api/analyze")
 async def analyze_script(req: AnalyzeRequest):
-    api_key = req.api_key if req.api_key else os.getenv("OPENAI_API_KEY", "dummy_key")
-    if not api_key or api_key in ["dummy_key", "your_api_key_here"]:
-        return {"result": "[System API Key Required] 화면 상단의 API Key 입력창에 올바른 OPENAI_API_KEY를 입력해주세요."}
+    api_key = req.api_key
+    if not api_key:
+        return {"result": "[API Key Required] 화면 상단의 API Key 입력창에 올바른 OPENAI_API_KEY를 입력하고 Confirm을 눌러주세요."}
         
     current_client = AsyncOpenAI(api_key=api_key)
     system_prompt = "You are an expert AI meeting assistant. You accurately analyze meeting transcripts and provide structured, detailed reports using markdown format."
