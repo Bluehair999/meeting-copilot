@@ -146,4 +146,21 @@ window.addEventListener('analysisEnded', () => {
   switchTab('export');
 });
 
+// Render Sleep Prevention (Heartbeat)
+function startHeartbeat() {
+  const backendHost = import.meta.env.VITE_BACKEND_URL || `${window.location.hostname}:8000`;
+  const backendURL = `${window.location.protocol}//${backendHost}/`;
+  
+  // Initial wake-up ping
+  fetch(backendURL).catch(() => {});
+
+  // Ping every 10 minutes (600,000ms) to stay within Render's 15min timeout
+  setInterval(() => {
+    fetch(backendURL).catch(() => {});
+    console.log("Heartbeat sent to Render backend to prevent sleep.");
+  }, 10 * 60 * 1000);
+}
+
+startHeartbeat();
+
 switchTab('record');

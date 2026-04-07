@@ -70,7 +70,7 @@ export function renderRecordingView(container: HTMLElement) {
           </div>
         </div>
         <div class="tag-container" style="padding: 0;">
-          <input type="text" id="custom-vocab" class="tag-input" placeholder="고유명사, 전문용어 등 잘 안들리는 단어를 쉼표(,)로 구분해서 적어주세요..." style="width: 100%; border: none; padding: 0.5rem;" />
+          <input type="text" id="custom-vocab" class="tag-input" placeholder="PHC말뚝, PSC박스, BIM, LOD, CPK 등 토목 전문용어를 쉼표(,)로 구분해서 적어주세요..." style="width: 100%; border: none; padding: 0.5rem;" />
         </div>
       </div>
 
@@ -235,6 +235,11 @@ export function renderRecordingView(container: HTMLElement) {
   let timeRemaining = 60;
   let countdownInterval: number | null = null;
   let heartbeatInterval: number | null = null;
+  
+  // Dynamic Chunking State
+  let doDynamicCut: (() => void) | null = null;
+  let lastCutTimestamp: number = 0;
+  let lastLoudSoundTimestamp: number = 0;
   
   // Web Audio Tracking
   let audioContext: AudioContext;
@@ -464,6 +469,26 @@ export function renderRecordingView(container: HTMLElement) {
       if (maxAvg > 15 && isRecording && ws && ws.readyState === WebSocket.OPEN) {
          // UI Feedback only
       }
+
+      // Dynamic Silence-based Chunking Logic
+      if (isRecording && lastCutTimestamp > 0) {
+        const now = Date.now();
+        if (maxAvg >= 5) { // 감도 2배 상승 (기존 20 -> 5) - 미세한 소리도 캐치
+          lastLoudSoundTimestamp = now;
+        }
+        
+        const elapsedSinceCut = now - lastCutTimestamp;
+        const silenceDuration = now - lastLoudSoundTimestamp;
+        
+        // Cut if we have at least 3 seconds of audio AND half a second of silence
+        // OR force a cut if 10 seconds of continuous speech passed
+        if ((elapsedSinceCut >= 3000 && silenceDuration >= 600) || elapsedSinceCut >= 10000) {
+          if (doDynamicCut) {
+            doDynamicCut();
+            lastLoudSoundTimestamp = now; // Prevent consecutive cuts
+          }
+        }
+      }
     }
     draw();
   }
@@ -543,11 +568,14 @@ export function renderRecordingView(container: HTMLElement) {
   }
 
   btnStart.addEventListener('click', async () => {
+    const initialBtnContent = btnStart.innerHTML;
+    btnStart.innerHTML = '<i data-lucide="play" class="animate-spin" style="width: 16px;"></i> AI Connecting...';
+    btnStart.disabled = true;
+
     isRecording = true;
     scriptContainer.innerHTML = '';
     fullScriptData = [];
     appState.analysisResult = '';
-    btnStart.classList.add('hidden');
     
     const inputLang = inputLangSelect.value;
     const translateLang = translateLangSelect.value;
@@ -555,65 +583,98 @@ export function renderRecordingView(container: HTMLElement) {
     const selectedDeviceId = micSelect.value;
     const customVocab = (document.getElementById('custom-vocab') as HTMLInputElement).value;
     
-    // Start hardware monitoring
+    const backendHost = import.meta.env.VITE_BACKEND_URL || `${window.location.hostname}:8000`;
+    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+
+    // 1. Initiate WebSocket and Hardware Setup in parallel
+    const wsPromise = new Promise<WebSocket>((resolve, reject) => {
+        const socket = new WebSocket(`${wsProtocol}//${backendHost}/ws/record`);
+        socket.onopen = () => {
+            socket.send(JSON.stringify({ type: "init", inputLang, translateLang, apiKey: appState.openaiApiKey, customVocab }));
+            resolve(socket);
+        };
+        socket.onerror = (e) => reject(new Error("STT 서버 연결에 실패했습니다. (Check backend/internet)"));
+        // Safety timeout
+        setTimeout(() => reject(new Error("서버 응답 시간 초과 (Render spin-up delay)")), 15000);
+    });
+
     try {
-      await startAudioMonitoring(sourceMode, selectedDeviceId);
-    } catch(e) {
-      alert("오디오 장치 및 브라우저 권한 획득에 실패했습니다. 녹음을 취소합니다.");
+      // Parallel execution
+      const [_, socket] = await Promise.all([
+          startAudioMonitoring(sourceMode, selectedDeviceId),
+          wsPromise
+      ]);
+      ws = socket;
+    } catch(e: any) {
+      alert("연결 및 장치 획득 실패: " + e.message);
       isRecording = false;
-      btnStart.classList.remove('hidden');
+      btnStart.innerHTML = initialBtnContent;
+      btnStart.disabled = false;
+      stopAudioMonitoring();
+      if (ws) ws.close();
       return;
     }
 
+    // Success - restore button and switch visibility
+    btnStart.innerHTML = initialBtnContent;
+    btnStart.disabled = false;
+    btnStart.classList.add('hidden');
     btnStop.classList.remove('hidden');
     btnSimulate.classList.remove('hidden');
     
-    const backendHost = import.meta.env.VITE_BACKEND_URL || `${window.location.hostname}:8000`;
-    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    ws = new WebSocket(`${wsProtocol}//${backendHost}/ws/record`);
-    ws.onopen = () => {
-      ws!.send(JSON.stringify({ type: "init", inputLang, translateLang, apiKey: appState.openaiApiKey, customVocab }));
+    const tlText = translateLang === 'none' ? '없음' : translateLangSelect.options[translateLangSelect.selectedIndex].text;
+    addScriptLine(`[System] AI 연결 완료 (입력: ${inputLangSelect.options[inputLangSelect.selectedIndex].text}, 번역: ${tlText}). 오디오 분석 시작...`);
+    
+    // To prevent audio gaps while chunking, we create the next recorder BEFORE stopping the current one.
+    let currentRecorder: MediaRecorder | null = null;
+    
+    doDynamicCut = () => {
+      if (!isRecording || !stream || !ws || ws.readyState !== WebSocket.OPEN) return;
       
-      const tlText = translateLang === 'none' ? '없음' : translateLangSelect.options[translateLangSelect.selectedIndex].text;
-      addScriptLine(`[System] AI 연결 완료 (입력: ${inputLangSelect.options[inputLangSelect.selectedIndex].text}, 번역: ${tlText}). 오디오 분석 시작...`);
-      
-      // Every 12 seconds, send an audio chunk (sequentially to avoid overlaps)
-      const startNextRecording = () => {
-        if (!isRecording || !stream || !ws || ws.readyState !== WebSocket.OPEN) return;
+      try {
+        const nextRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+        const chunks: BlobPart[] = [];
+        nextRecorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
         
-        try {
-          const recorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
-          const chunks: BlobPart[] = [];
-          recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
-          recorder.onstop = async () => {
-             const blob = new Blob(chunks, { type: 'audio/webm' });
-             if (blob.size > 1000 && ws && ws.readyState === WebSocket.OPEN) { 
-                const buffer = await blob.arrayBuffer();
-                ws.send(buffer);
-             }
-             // Start next chunk after current one finished
-             if (isRecording) setTimeout(startNextRecording, 100); 
-          };
-          recorder.start();
-          // Decrease a bit to 11.5s to ensure better sequencing if needed
-          setTimeout(() => { try { if (recorder.state === "recording") recorder.stop(); } catch(e) {} }, 11500);
-        } catch (err) {
-          console.error("MediaRecorder error", err);
-          if (isRecording) setTimeout(startNextRecording, 1000);
+        nextRecorder.onstop = async () => {
+           const blob = new Blob(chunks, { type: 'audio/webm' });
+           if (blob.size > 500 && ws && ws.readyState === WebSocket.OPEN) { 
+              const buffer = await blob.arrayBuffer();
+              ws.send(buffer);
+           }
+        };
+        
+        // Start the new recorder immediately so no audio is missed
+        nextRecorder.start();
+        
+        // If there was a previous recorder, stop it after a 500ms overlap (1,2조 겹침 효과)
+        if (currentRecorder && currentRecorder.state === "recording") {
+            const prev = currentRecorder;
+            setTimeout(() => {
+                try { prev.stop(); } catch(e) {}
+            }, 500); 
         }
-      };
-      
-      startNextRecording();
-
-      // Application level Heartbeat to prevent 30-min connection drop
-      heartbeatInterval = window.setInterval(() => {
-        if (ws && ws.readyState === WebSocket.OPEN) {
-          ws.send(JSON.stringify({ type: "ping" }));
-        }
-      }, 30000);
-
-      startVADTimer();
+        
+        currentRecorder = nextRecorder;
+        lastCutTimestamp = Date.now();
+      } catch (err) {
+        console.error("MediaRecorder error", err);
+      }
     };
+    
+    // Initialize timestamps and perform first cut start
+    lastLoudSoundTimestamp = Date.now();
+    doDynamicCut();
+
+    // Application level Heartbeat to prevent 30-min connection drop
+    heartbeatInterval = window.setInterval(() => {
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: "ping" }));
+      }
+    }, 30000);
+
+    startVADTimer();
+
     ws.onmessage = (event) => {
       const data = JSON.parse(event.data);
       addScriptLine(data);
@@ -628,6 +689,9 @@ export function renderRecordingView(container: HTMLElement) {
   function stopRecording(isTimeout = false) {
     if (!isRecording) return;
     isRecording = false;
+    doDynamicCut = null;
+    lastCutTimestamp = 0;
+    
     clearVADTimer();
     stopAudioMonitoring();
     btnStop.classList.add('hidden');

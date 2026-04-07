@@ -33,6 +33,7 @@ async def websocket_record(websocket: WebSocket):
     input_lang = "ko"
     translate_lang = "none"
     custom_vocab = ""
+    last_transcript = "" # 3조 역할 (이전 문맥 기억용)
     
     try:
         ws_api_key = None
@@ -81,16 +82,24 @@ async def websocket_record(websocket: WebSocket):
                     current_client = AsyncOpenAI(api_key=api_key)
                     
                     if input_lang == "ko":
-                        prompt_hint = "회의 녹취록입니다. 들리는 그대로 정확히 한국어로만 작성하세요. '구독과 좋아요', '알림 설정', '시청해주셔서 감사합니다' 같은 문구는 절대 추가하지 마세요. 오직 참석자들의 발언만 기록하세요."
+                        prompt_hint = "도화엔지니어링의 토목/철도 설계 및 건설 현장 회의 녹취록입니다. 전문 용어가 많이 포함되어 있으니 문맥에 맞게 정확히 한국어로만 작성하세요. '구독과 좋아요', '알림 설정', '시청해주셔서 감사합니다' 같은 문구는 절대 추가하지 마세요. 오직 참석자들의 발언 실질적인 내용만 기록하세요."
                     elif input_lang == "en":
-                        prompt_hint = "This is a formal meeting recording. Transcribe exactly what is spoken in English only. Do NOT add irrelevant phrases like 'Thanks for watching' or 'Subscribe to my channel'."
+                        prompt_hint = "This is a professional civil engineering / infrastructure meeting recording. Transcribe exactly what is spoken in English only. Do NOT add irrelevant phrases like 'Thanks for watching'."
                     elif input_lang == "pl":
-                        prompt_hint = "To jest nagranie ze spotkania. Dokładnie zrób transkrypcję tylko po polsku. Nie dodawaj żadnych zbędnych fraz."
+                        prompt_hint = "To jest nagranie ze spotkania inżynieryjnego. Dokładnie zrób transkrypcję tylko po polsku. Nie dodawaj żadnych zbędnych fraz."
                     else:
                         prompt_hint = "Transcribe exactly what is spoken. Do NOT add irrelevant phrases."
                         
+                    # Civil Engineering core terminology as default hint
+                    core_civil_vocab = "교량, 교대, 교각, 기초, 말뚝, 현장타설말뚝, PHC말뚝, 강관말뚝, 케이슨, 직접기초, 교좌장치, 신축이음, 슬래브, 상부구조, PSC, PSC박스, 프리스트레스트, 강선, 텐던, 정착구, 강합성거더, BIM, CDE, EIR, LOD, PB, PAB, PT, 설계도서, 계산서, 도화, Dohwa"
+                    prompt_hint += f" 자주 쓰이는 핵심 고유명사/전문용어: {core_civil_vocab}"
+                    
                     if custom_vocab:
-                        prompt_hint += f" 자주 쓰이는 핵심 고유명사/전문용어: {custom_vocab}"
+                        prompt_hint += f", {custom_vocab}"
+                        
+                    # 3조 역할: 앞선 문맥 전달 (Overlapping 중복 방지 및 맥락 유지)
+                    if last_transcript:
+                        prompt_hint += f", 이전에 이렇게 말했음(말이 이어짐): {last_transcript}"
                         
                     with open(tmp_path, "rb") as audio_file:
                         transcript = await current_client.audio.transcriptions.create(
@@ -133,6 +142,9 @@ async def websocket_record(websocket: WebSocket):
                         
                     if not original_text:
                         continue
+                        
+                    # 다음 청크를 위해 마지막 50글자만 맥락으로 저장
+                    last_transcript = original_text[-50:] if len(original_text) > 50 else original_text
                         
                     if translate_lang == "none":
                         await websocket.send_json({"text": original_text})
@@ -185,7 +197,7 @@ async def analyze_script(req: AnalyzeRequest):
         return {"result": "[API Key Required] 화면 상단의 API Key 입력창에 올바른 OPENAI_API_KEY를 입력하고 Confirm을 눌러주세요."}
         
     current_client = AsyncOpenAI(api_key=api_key)
-    system_prompt = "You are an expert AI meeting assistant. You accurately analyze meeting transcripts and provide structured, detailed reports using markdown format."
+    system_prompt = "You are a specialized AI Civil Engineering Meeting Consultant. You accurately analyze technical infrastructure meeting transcripts and provide structured, detailed reports with engineering precision in markdown format."
     
     if req.is_summary:
         if req.participants:
@@ -285,6 +297,12 @@ async def analyze_script(req: AnalyzeRequest):
                 ]
             )
             screened_script = completion.choices[0].message.content.strip()
+            # GPT-4 sometimes wraps the output in ``` or ```markdown, strip those out
+            if screened_script.startswith("```"):
+                screened_script = re.sub(r"^```[a-zA-Z]*\n?", "", screened_script)
+                if screened_script.endswith("```"):
+                    screened_script = screened_script[:-3].strip()
+
             result = f"## 🎙️ 전체 회의 스크립트 (AI 화자 구분 및 스크리닝 완료)\n\n{screened_script}"
         except Exception as e:
             result = f"[Analysis Error] GPT 스크리닝 중 오류가 발생했습니다: {str(e)}\n\n## 🎙️ 100% 원본 스크립트\n\n{req.script}"

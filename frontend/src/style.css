@@ -302,3 +302,57 @@ input:focus, select:focus {
     justify-content: center;
   }
 }
+
+/* Report Selection UI */
+.report-controls {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.2rem;
+  padding: 0.8rem;
+  background: var(--surface-color-light);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  align-items: center;
+  font-size: 0.85rem;
+  flex-wrap: wrap;
+}
+
+.report-item {
+  display: flex !important;
+  gap: 1rem !important;
+  align-items: flex-start !important;
+  padding: 0.6rem !important;
+  border-radius: 8px !important;
+  cursor: pointer !important;
+  transition: background 0.2s !important;
+  border-bottom: 1px solid rgba(0,0,0,0.03) !important;
+  white-space: normal !important; /* Override parent pre-wrap */
+}
+
+.report-item:hover {
+  background: rgba(79, 70, 229, 0.08) !important;
+}
+
+.report-item-checkbox {
+  width: 20px !important;
+  height: 20px !important;
+  min-width: 20px !important;
+  margin-top: 2px !important;
+  cursor: pointer !important;
+  accent-color: var(--primary-color) !important;
+}
+
+.report-item-text {
+  flex: 1 !important;
+  font-size: 0.95rem !important;
+  line-height: 1.5 !important;
+  color: var(--text-main) !important;
+  white-space: pre-wrap !important;
+}
+
+.report-header-area {
+  margin-bottom: 1rem;
+  padding: 0.5rem;
+  background: rgba(var(--primary-color), 0.05);
+  border-radius: 4px;
+}
