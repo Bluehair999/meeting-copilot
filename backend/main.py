@@ -82,24 +82,20 @@ async def websocket_record(websocket: WebSocket):
                     current_client = AsyncOpenAI(api_key=api_key)
                     
                     if input_lang == "ko":
-                        prompt_hint = "도화엔지니어링, 토목, 철도, 설계, 건설, 현장, 회의. 이어서 진행되는 대화 내용:"
+                        prompt_hint = "다음은 건설 인프라 프로젝트를 위한 비즈니스 회의입니다. 자연스럽게 말씀해주세요."
                     elif input_lang == "en":
-                        prompt_hint = "Civil engineering, infrastructure, professional meeting conversation:"
+                        prompt_hint = "This is a business meeting for a civil infrastructure project."
                     elif input_lang == "pl":
-                        prompt_hint = "Inżynieria lądowa, spotkanie biznesowe, infrastruktura:"
+                        prompt_hint = "To jest spotkanie biznesowe dotyczące projektu infrastrukturalnego."
                     else:
-                        prompt_hint = "Meeting transcription:"
+                        prompt_hint = "Meeting transcription."
                         
-                    # Civil Engineering core terminology as default hint
-                    core_civil_vocab = "교량, 교대, 교각, 기초, 말뚝, 현장타설말뚝, PHC말뚝, 강관말뚝, 케이슨, 직접기초, 교좌장치, 신축이음, 슬래브, 상부구조, PSC, PSC박스, 프리스트레스트, 강선, 텐던, 정착구, 강합성거더, BIM, CDE, EIR, LOD, PB, PAB, PT, 설계도서, 계산서, 도화, Dohwa"
-                    prompt_hint += f" 자주 쓰이는 핵심 고유명사/전문용어: {core_civil_vocab}"
-                    
                     if custom_vocab:
-                        prompt_hint += f", {custom_vocab}"
+                        prompt_hint += f" 전문 용어 힌트: {custom_vocab}"
                         
                     # 3조 역할: 앞선 문맥 전달 (Overlapping 중복 방지 및 맥락 유지)
                     if last_transcript:
-                        prompt_hint += f", 이전에 이렇게 말했음(말이 이어짐): {last_transcript}"
+                        prompt_hint += f" (이전 문장: {last_transcript})"
                         
                     with open(tmp_path, "rb") as audio_file:
                         transcript = await current_client.audio.transcriptions.create(
@@ -138,6 +134,10 @@ async def websocket_record(websocket: WebSocket):
                         "자막제작"
                     ]
                     if any(h in hw_filter for h in hallucinations) and len(original_text) < 40:
+                        continue
+                        
+                    # Prompt Echo Hallucination Filter (입력된 프롬프트를 앵무새처럼 반복하는 증상)
+                    if original_text.count("PSC박스") > 2 or original_text.count("프리스트레스트") > 2 or original_text.count("도화엔지니어링") > 2:
                         continue
                         
                     if not original_text:
