@@ -12,6 +12,14 @@ export function renderAnalysisView(container: HTMLElement) {
       
       <p class="text-sm">Recording finished. The script length is <strong>${appState.script.length} characters</strong>. Please choose an analysis mode:</p>
       
+      <div style="display: flex; gap: 1rem; align-items: center; margin-top: 0.5rem; background: var(--surface-color-light); padding: 0.8rem; border-radius: 6px; border: 1px solid var(--border-color);">
+        <span class="text-sm" style="font-weight: 600; min-width: max-content;">📝 요약 양식(Template): </span>
+        <select id="template-select" style="flex: 1; padding: 0.4rem; border-radius: 4px; border: 1px solid var(--border-color); font-size: 0.9rem;">
+          <option value="general">일반 회의 요약 (General Summary)</option>
+          <option value="kickoff_trc">Kick-off Meeting (Dohwa-JV SGR)</option>
+        </select>
+      </div>
+      
       <div style="display: flex; gap: 1rem; margin-top: 0.5rem;">
         <button id="btn-full" class="btn" style="flex: 1; min-height: 100px; flex-direction: column; gap: 0.5rem;">
           <i data-lucide="clock" style="width: 28px; height: 28px;"></i>
@@ -169,9 +177,12 @@ export function renderAnalysisView(container: HTMLElement) {
         }
       }
 
+      const templateType = (document.getElementById('template-select') as HTMLSelectElement).value;
+
       const payload = { 
         script: scriptToUse, 
-        is_summary: isSummary, 
+        is_summary: isSummary,
+        template_type: templateType,
         api_key: appState.openaiApiKey,
         participants: appState.participants,
         recording_time: kstTime

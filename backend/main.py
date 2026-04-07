@@ -189,6 +189,7 @@ class AnalyzeRequest(BaseModel):
     api_key: Optional[str] = None
     participants: Optional[list[str]] = None
     recording_time: Optional[str] = None
+    template_type: Optional[str] = "general"
 
 @app.post("/api/analyze")
 async def analyze_script(req: AnalyzeRequest):
@@ -207,7 +208,88 @@ async def analyze_script(req: AnalyzeRequest):
             
         time_str = req.recording_time if req.recording_time else "시간 언급 없음"
 
-        user_prompt = f"""다음 원본 회의록을 바탕으로 아래 [작성 지침]과 [출력 형식]을 엄격하게 준수하여 요약 리포트를 작성해주세요.
+        if req.template_type == "kickoff_trc":
+            user_prompt = f"""다음 원본 회의록(스크립트)을 바탕으로 아래 [작성 지침]과 [출력 형식]을 엄격하게 준수하여 'Kick-off Meeting Minutes' 공식 리포트를 작성하세요.
+
+[작성 지침]
+1. 작성 언어: 모든 텍스트는 **영어(English)**로 작성할 것 (한국어 발언도 영어로 정확히 번역해서 요약할 것).
+2. 역할: 당신은 DOHWA-JV 및 TRC 측의 수석 엔지니어(Senior Resident Engineer)를 보좌하는 회의록 기록관입니다.
+3. 매핑(Mapping): 제공된 원본 대화를 분석하여, 하단의 17개 [Agenda Items] 중 관련이 있는 항목 아래에 내용을 불릿포인트(Bullet points)로 요약 배치하세요.
+4. 원문에 논의되지 않은 목차(Agenda)는 억지로 지어내지 말고, 내용을 비워두거나 "No specific discussion recorded during this session." 이라고 적으세요.
+5. 마크다운 문법(*, **, 테이블 등)을 사용해 프로페셔널한 공식 문서처럼 출력하세요.
+
+[출력 양식 구조] (아래의 양식 틀을 그대로 유지하며 빈칸을 채우세요)
+
+# MINUTES OF KICK-OFF MEETING
+
+| Project Information | Details |
+|---|---|
+| **Document No.** | TB-SGR-KOM-26-01 |
+| **Date / Time** | {time_str} |
+| **Venue** | Conference Room at TRC Headquarters (or based on transcript) |
+| **Employer** | Tanzania Railways Corporation (TRC) |
+| **Engineer** | DOHWA Engineering Co., Ltd JV |
+| **Contractor** | CREGC-CREDC Consortium |
+
+## MEETING AGENDA DISCUSSIONS
+
+**1. Opening and Introduction**
+- (Extract related points here)
+
+**2. Project Overview**
+- (Extract related points here)
+
+**3. Roles and Responsibilities (Sub-Clause 3.1, 3.5, 4.1)**
+- 
+
+**4. Commencement Readiness and Mobilization (Sub-Clause 4.3, 6.9, 8.1)**
+- 
+
+**5. Employer's and Engineer's Facilities (Sub-Clause 4.23)**
+- 
+
+**6. Insurance Arrangements (Clause 18 and 19)**
+- 
+
+**7. Programme Submission and Methodology (Sub-Clause 8.3)**
+- 
+
+**8. Design Management and Design Review Procedure (Sub-Clause 5.2)**
+- 
+
+**9. Quality Management System (Sub-Clause 4.9)**
+- 
+
+**10. ESHS - Environment, Social, Health and Safety (Sub-Clause 4.8, 6.7)**
+- 
+
+**11. Initial Deliverables and Reporting (Sub-Clause 4.21)**
+- 
+
+**12. Communication and Document Control (Sub-Clause 1.3)**
+- 
+
+**13. Meeting Arrangements**
+- 
+
+**14. Constitution of DAAB (Sub-Clause 21.1, 21.2)**
+- 
+
+**15. Contractor's Presentation - Site Establishment**
+- 
+
+**16. Any Other Business (AOB)**
+- 
+
+**17. Concluding Statement**
+- 
+
+---
+[Original Transcript for Analysis]
+{req.script}
+"""
+        else:
+            user_prompt = f"""다음 원본 회의록을 바탕으로 아래 [작성 지침]과 [출력 형식]을 엄격하게 준수하여 요약 리포트를 작성해주세요.
 
 [작성 지침]
 1. 기본 원칙
