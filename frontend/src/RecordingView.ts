@@ -593,7 +593,7 @@ export function renderRecordingView(container: HTMLElement) {
             socket.send(JSON.stringify({ type: "init", inputLang, translateLang, apiKey: appState.openaiApiKey, customVocab }));
             resolve(socket);
         };
-        socket.onerror = (e) => reject(new Error("STT 서버 연결에 실패했습니다. (Check backend/internet)"));
+        socket.onerror = () => reject(new Error("STT 서버 연결에 실패했습니다. (Check backend/internet)"));
         // Safety timeout
         setTimeout(() => reject(new Error("서버 응답 시간 초과 (Render spin-up delay)")), 15000);
     });
