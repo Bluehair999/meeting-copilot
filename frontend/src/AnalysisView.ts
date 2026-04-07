@@ -16,7 +16,7 @@ export function renderAnalysisView(container: HTMLElement) {
         <span class="text-sm" style="font-weight: 600; min-width: max-content;">📝 요약 양식(Template): </span>
         <select id="template-select" style="flex: 1; padding: 0.4rem; border-radius: 4px; border: 1px solid var(--border-color); font-size: 0.9rem;">
           <option value="general">일반 회의 요약 (General Summary)</option>
-          <option value="kickoff_trc">Kick-off Meeting (Dohwa-JV SGR)</option>
+          <option value="kickoff_trc">SGR Meeting (Dohwa-JV)</option>
         </select>
       </div>
       
@@ -185,6 +185,11 @@ export function renderAnalysisView(container: HTMLElement) {
       const kstTime = now.toLocaleString('ko-KR', { timeZone: 'Asia/Seoul', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
       
       let scriptToUse = appState.script;
+      
+      if (!scriptToUse || scriptToUse.trim().length < 5) {
+        alert("분석할 대화 내용이 없습니다. 먼저 녹음을 진행하거나 발언을 해주세요.");
+        return;
+      }
       
       // If we are requesting a summary and we currently have a full report (not a summary)
       if (isSummary && !currentIsSummary) {

@@ -222,15 +222,15 @@ async def analyze_script(req: AnalyzeRequest):
 5. **18. Summary of Action Items**: 위에서 도출된 모든 Action Item을 문서 하단 18번 항목에 마크다운 표(Table) 형식으로 깔끔하게 모아서 요약하세요.
 6. 전문 용어: ESHS, C-ESMP, WBS, DAAB 등 토목/건축 FIDIC 계약 양식에 맞는 전문 용어를 살려서 작성하세요.
 
-[출력 양식 구조] (이 마크다운 포맷과 번호를 그대로 복사하여 사용할 것. 빈칸은 원문을 바탕으로 채울 것)
+[출력 양식 구조] (이 마크다운 포맷과 번호를 그대로 복사하여 사용할 것. 빈칸은 원문에서 확인된 경우에만 채우고, 확인되지 않은 정보는 "To be determined" 또는 "No specific discussion"으로 작성할 것. **절대 TB-SGR-KOM-26-01과 같은 예시 데이터를 마음대로 채우지 마십시오.**)
 
-# MINUTES OF KICK-OFF MEETING
+# MINUTES OF SGR MEETING
 
 | Project Information | Details |
 |---|---|
-| **Document No.** | TB-SGR-KOM-26-01 |
+| **Document No.** | (원문에서 확인 안될 시: TB-SGR-KOM-26-XX) |
 | **Date / Time** | {time_str} |
-| **Venue** | Conference Room at TRC Headquarters (or inferred from text) |
+| **Venue** | (원문에서 확인 안될 시: TBD) |
 | **Employer** | Tanzania Railways Corporation (TRC) |
 | **Engineer** | DOHWA Engineering Co., Ltd JV |
 | **Contractor** | CREGC-CREDC Consortium |
