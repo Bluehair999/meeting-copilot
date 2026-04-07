@@ -92,8 +92,30 @@ export function renderAnalysisView(container: HTMLElement) {
     }
 
     if (isSummary) {
-      // Summary Mode: Just show the markdown-like content with basic breaks
-      analysisContent.innerHTML = content.replace(/\n/g, '<br>');
+      // Summary Mode: Render Markdown to HTML and inject custom styles for tables
+      let parsedHTML = "";
+      if ((window as any).marked) {
+        parsedHTML = (window as any).marked.parse(content);
+      } else {
+        parsedHTML = content.replace(/\n/g, '<br>');
+      }
+      
+      const customStyles = `
+        <style>
+          .markdown-body table { width: 100%; border-collapse: collapse; margin-top: 5px; margin-bottom: 20px; font-family: 'Arial', sans-serif; }
+          .markdown-body th, .markdown-body td { border: 1px solid #000; padding: 6px 12px; text-align: left; vertical-align: top; }
+          .markdown-body th { background-color: #4B5563; color: white; font-weight: bold; border-color: #000; }
+          .markdown-body td { background-color: #ffffff; color: #111; border-color: #000;}
+          .markdown-body h1 { font-family: 'Arial', sans-serif; font-size: 1.4rem; text-align: center; margin-bottom: 15px; color: #1e3a8a; font-weight: bold; }
+          .markdown-body h2 { font-family: 'Arial', sans-serif; font-size: 1.05rem; background-color: #e5e7eb; padding: 6px 10px; border: 1px solid #000; margin-top: 15px; margin-bottom: 5px; color: #000; font-weight: bold; }
+          .markdown-body ul { margin-top: 0; padding-left: 25px; margin-bottom: 10px; }
+          .markdown-body li { margin-bottom: 4px; color: #111; font-family: 'Arial', sans-serif; }
+          .markdown-body p { margin-top: 0; margin-bottom: 8px; color: #111; font-family: 'Arial', sans-serif; }
+          .markdown-body strong { font-weight: bold; color: #000; }
+          .markdown-body hr { border: none; border-top: 2px solid #000; margin: 20px 0; }
+        </style>
+      `;
+      analysisContent.innerHTML = customStyles + `<div class="markdown-body" style="background-color: #ffffff; padding: 20px; border-radius: 4px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border: 1px solid #d1d5db;">${parsedHTML}</div>`;
     } else {
       // Full Report: Build with interactive checkboxes using template string for robustness
       const lines = content.split('\n');
