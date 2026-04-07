@@ -212,13 +212,17 @@ async def analyze_script(req: AnalyzeRequest):
             user_prompt = f"""다음 원본 회의록(스크립트)을 바탕으로 아래 [작성 지침]과 [출력 형식]을 엄격하게 준수하여 'Kick-off Meeting Minutes' 공식 리포트를 작성하세요.
 
 [작성 지침]
-1. 작성 언어: 모든 텍스트는 **영어(English)**로 작성할 것 (한국어 발언도 영어로 정확히 번역해서 요약할 것).
-2. 역할: 당신은 DOHWA-JV 및 TRC 측의 수석 엔지니어(Senior Resident Engineer)를 보좌하는 회의록 기록관입니다.
-3. 매핑(Mapping): 제공된 원본 대화를 분석하여, 하단의 17개 [Agenda Items] 중 관련이 있는 항목 아래에 내용을 불릿포인트(Bullet points)로 요약 배치하세요.
-4. 원문에 논의되지 않은 목차(Agenda)는 억지로 지어내지 말고, 내용을 비워두거나 "No specific discussion recorded during this session." 이라고 적으세요.
-5. 마크다운 문법(*, **, 테이블 등)을 사용해 프로페셔널한 공식 문서처럼 출력하세요.
+1. 작성 언어: 모든 내용과 항목 제목은 **영어(English)**로 작성할 것 (발언이 한국어라도 전문적인 비즈니스 영어로 완벽히 번역해서 요약).
+2. 역할: 당신은 DOHWA-JV 및 TRC 측의 수석 엔지니어(Senior Resident Engineer)를 보좌하는 공식 회의록 작성자(Document Controller)입니다.
+3. मै핑(Mapping): 제공된 원문을 철저히 분석하여, 아래 [Agenda Items 1~20] 중 관련이 있는 항목의 세부 내용으로 요약 및 배치하세요. 관련 없는 항목은 억지로 채우지 말고 비워두거나 "No specific discussion." 이라 기재하세요.
+4. **Action Items (핵심)**: 대화 내용 중 누군가가 해야 할 '업무 지시, 결정된 향후 작업, 조치 사항'이 나오면 해당 Agenda 항목 내에 다음과 같은 형식으로 반드시 기록하세요.
+   * **Action Item [N]:** [해당 업무 내용]
+   * **Responsibility:** [책임자/담당자]
+   * **Timeline:** [기한/일정]
+5. **18. Summary of Action Items**: 위에서 도출된 모든 Action Item을 문서 하단 18번 항목에 마크다운 표(Table) 형식으로 깔끔하게 모아서 요약하세요.
+6. 전문 용어: ESHS, C-ESMP, WBS, DAAB 등 토목/건축 FIDIC 계약 양식에 맞는 전문 용어를 살려서 작성하세요.
 
-[출력 양식 구조] (아래의 양식 틀을 그대로 유지하며 빈칸을 채우세요)
+[출력 양식 구조] (이 마크다운 포맷과 번호를 그대로 복사하여 사용할 것. 빈칸은 원문을 바탕으로 채울 것)
 
 # MINUTES OF KICK-OFF MEETING
 
@@ -226,63 +230,79 @@ async def analyze_script(req: AnalyzeRequest):
 |---|---|
 | **Document No.** | TB-SGR-KOM-26-01 |
 | **Date / Time** | {time_str} |
-| **Venue** | Conference Room at TRC Headquarters (or based on transcript) |
+| **Venue** | Conference Room at TRC Headquarters (or inferred from text) |
 | **Employer** | Tanzania Railways Corporation (TRC) |
 | **Engineer** | DOHWA Engineering Co., Ltd JV |
 | **Contractor** | CREGC-CREDC Consortium |
 
-## MEETING AGENDA DISCUSSIONS
+---
 
-**1. Opening and Introduction**
-- (Extract related points here)
-
-**2. Project Overview**
-- (Extract related points here)
-
-**3. Roles and Responsibilities (Sub-Clause 3.1, 3.5, 4.1)**
+## 1. Opening and Introduction
 - 
 
-**4. Commencement Readiness and Mobilization (Sub-Clause 4.3, 6.9, 8.1)**
+## 2. Project Overview
 - 
 
-**5. Employer's and Engineer's Facilities (Sub-Clause 4.23)**
+## 3. Roles and Responsibilities (Sub-Clause 3.1, 3.5, 4.1)
 - 
 
-**6. Insurance Arrangements (Clause 18 and 19)**
+## 4. Commencement Readiness and Mobilization (Sub-Clause 4.3, 6.9, 8.1)
 - 
 
-**7. Programme Submission and Methodology (Sub-Clause 8.3)**
+## 5. Employer's and Engineer's Facilities (Sub-Clause 4.23)
 - 
 
-**8. Design Management and Design Review Procedure (Sub-Clause 5.2)**
+## 6. Insurance Arrangements (Clause 18 and 19)
 - 
 
-**9. Quality Management System (Sub-Clause 4.9)**
+## 7. Programme Submission and Methodology (Sub-Clause 8.3)
 - 
 
-**10. ESHS - Environment, Social, Health and Safety (Sub-Clause 4.8, 6.7)**
+## 8. Design Management and Design Review Procedure (Sub-Clause 5.2)
 - 
 
-**11. Initial Deliverables and Reporting (Sub-Clause 4.21)**
+## 9. Quality Management System (Sub-Clause 4.9)
 - 
 
-**12. Communication and Document Control (Sub-Clause 1.3)**
+## 10. ESHS - Environment, Social, Health and Safety (Sub-Clause 4.8, 6.7)
 - 
 
-**13. Meeting Arrangements**
+## 11. Initial Deliverables and Reporting (Sub-Clause 4.21)
 - 
 
-**14. Constitution of DAAB (Sub-Clause 21.1, 21.2)**
+## 12. Communication and Document Control (Sub-Clause 1.3)
 - 
 
-**15. Contractor's Presentation - Site Establishment**
+## 13. Meeting Arrangements
 - 
 
-**16. Any Other Business (AOB)**
+## 14. Constitution of DAAB (Sub-Clause 21.1, 21.2)
 - 
 
-**17. Concluding Statement**
+## 15. Contractor's Presentation - Site Establishment and Mobilization Plans
 - 
+
+## 16. Any Other Business (AOB)
+- 
+
+## 17. Concluding Statement
+- 
+
+---
+
+## 18. Summary of Action Items
+| No. | Action Item | Responsibility | Timeline |
+|---|---|---|---|
+| 1 | (Action Item 내용) | (책임자) | (기한) |
+| 2 | ... | ... | ... |
+
+## 19. Next Meeting
+- **Date/Time:** 
+- **Venue:** 
+- **Participants:** 
+
+## 20. Meeting Closure
+- (종료 시간 및 내용)
 
 ---
 [Original Transcript for Analysis]
