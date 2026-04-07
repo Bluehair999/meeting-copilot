@@ -82,13 +82,13 @@ async def websocket_record(websocket: WebSocket):
                     current_client = AsyncOpenAI(api_key=api_key)
                     
                     if input_lang == "ko":
-                        prompt_hint = "도화엔지니어링의 토목/철도 설계 및 건설 현장 회의 녹취록입니다. 전문 용어가 많이 포함되어 있으니 문맥에 맞게 정확히 한국어로만 작성하세요. '구독과 좋아요', '알림 설정', '시청해주셔서 감사합니다' 같은 문구는 절대 추가하지 마세요. 오직 참석자들의 발언 실질적인 내용만 기록하세요."
+                        prompt_hint = "도화엔지니어링, 토목, 철도, 설계, 건설, 현장, 회의. 이어서 진행되는 대화 내용:"
                     elif input_lang == "en":
-                        prompt_hint = "This is a professional civil engineering / infrastructure meeting recording. Transcribe exactly what is spoken in English only. Do NOT add irrelevant phrases like 'Thanks for watching'."
+                        prompt_hint = "Civil engineering, infrastructure, professional meeting conversation:"
                     elif input_lang == "pl":
-                        prompt_hint = "To jest nagranie ze spotkania inżynieryjnego. Dokładnie zrób transkrypcję tylko po polsku. Nie dodawaj żadnych zbędnych fraz."
+                        prompt_hint = "Inżynieria lądowa, spotkanie biznesowe, infrastruktura:"
                     else:
-                        prompt_hint = "Transcribe exactly what is spoken. Do NOT add irrelevant phrases."
+                        prompt_hint = "Meeting transcription:"
                         
                     # Civil Engineering core terminology as default hint
                     core_civil_vocab = "교량, 교대, 교각, 기초, 말뚝, 현장타설말뚝, PHC말뚝, 강관말뚝, 케이슨, 직접기초, 교좌장치, 신축이음, 슬래브, 상부구조, PSC, PSC박스, 프리스트레스트, 강선, 텐던, 정착구, 강합성거더, BIM, CDE, EIR, LOD, PB, PAB, PT, 설계도서, 계산서, 도화, Dohwa"
