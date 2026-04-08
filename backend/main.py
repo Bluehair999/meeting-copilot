@@ -209,7 +209,7 @@ async def analyze_script(req: AnalyzeRequest):
         time_str = req.recording_time if req.recording_time else "시간 언급 없음"
 
         if req.template_type == "kickoff_trc":
-            user_prompt = f"""다음 원본 회의록(스크립트)을 바탕으로 아래 [작성 지침]과 [출력 형식]을 엄격하게 준수하여 'Kick-off Meeting Minutes' 공식 리포트를 작성하세요.
+            user_prompt = f"""다음 원본 회의록(스크립트)을 바탕으로 아래 [작성 지침]과 [출력 형식]을 엄격하게 준수하여 'SGR Meeting Minutes' 공식 리포트를 작성하세요.
 
 [작성 지침]
 1. 작성 언어: 모든 내용과 항목 제목은 **영어(English)**로 작성할 것 (발언이 한국어라도 전문적인 비즈니스 영어로 완벽히 번역해서 요약).
