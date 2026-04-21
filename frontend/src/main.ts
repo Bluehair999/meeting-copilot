@@ -3,6 +3,7 @@ import { createIcons, Mic, FileText, Download, Users, Smartphone, Monitor } from
 import { renderRecordingView } from './RecordingView';
 import { renderAnalysisView } from './AnalysisView';
 import { renderExportView } from './ExportView';
+import { renderLiveTransView } from './LiveTransView';
 import { appState } from './state';
 
 document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
@@ -31,8 +32,9 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
   
   <div class="tabs" style="display: flex; gap: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;">
     <button id="tab-record" class="tab-btn active">1. Recording</button>
-    <button id="tab-analyze" class="tab-btn">2. AI Analysis</button>
-    <button id="tab-export" class="tab-btn">3. Export</button>
+    <button id="tab-live" class="tab-btn">2. Live Trans</button>
+    <button id="tab-analyze" class="tab-btn">3. AI Analysis</button>
+    <button id="tab-export" class="tab-btn">4. Export</button>
   </div>
 
   <main id="main-content" style="display: flex; flex-direction: column; gap: 1.5rem; flex-grow: 1; margin-top: 1rem;">
@@ -122,18 +124,20 @@ if (apiKeyInput && btnApiConfirm && btnApiDelete) {
 
 const mainContent = document.getElementById('main-content')!;
 
-export function switchTab(tabId: 'record' | 'analyze' | 'export') {
+export function switchTab(tabId: 'record' | 'live' | 'analyze' | 'export') {
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('tab-' + tabId)?.classList.add('active');
   
   mainContent.innerHTML = '';
   
   if (tabId === 'record') renderRecordingView(mainContent);
+  else if (tabId === 'live') renderLiveTransView(mainContent);
   else if (tabId === 'analyze') renderAnalysisView(mainContent);
   else if (tabId === 'export') renderExportView(mainContent);
 }
 
 document.getElementById('tab-record')?.addEventListener('click', () => switchTab('record'));
+document.getElementById('tab-live')?.addEventListener('click', () => switchTab('live'));
 document.getElementById('tab-analyze')?.addEventListener('click', () => switchTab('analyze'));
 document.getElementById('tab-export')?.addEventListener('click', () => switchTab('export'));
 
