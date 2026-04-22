@@ -1,5 +1,6 @@
-import { createIcons, FileText, CheckCircle, Clock } from 'lucide';
+import { createIcons, FileText, CheckCircle, Clock, Sparkles } from 'lucide';
 import { appState } from './state';
+import { switchParentTab } from './main';
 
 export function renderAnalysisView(container: HTMLElement) {
   container.innerHTML = `
@@ -61,15 +62,20 @@ export function renderAnalysisView(container: HTMLElement) {
           box-shadow: inset 0 2px 10px rgba(0,0,0,0.2);
         "></div>
         
-        <button id="btn-next" class="btn btn-primary hidden" style="align-self: flex-end; margin-top: auto;">
-          Proceed to Document Export
-        </button>
+        <div class="flex-row gap-1" style="justify-content: flex-end; margin-top: auto;">
+          <button id="btn-extract-glossary" class="btn" style="background: rgba(79, 70, 229, 0.1); color: var(--primary-color); border-color: var(--primary-color);">
+            <i data-lucide="sparkles" style="width: 16px;"></i> Extract Terminology
+          </button>
+          <button id="btn-next" class="btn btn-primary hidden">
+            Proceed to Document Export
+          </button>
+        </div>
       </div>
     </div>
   `;
 
   createIcons({
-    icons: { FileText, CheckCircle, Clock }
+    icons: { FileText, CheckCircle, Clock, Sparkles }
   });
 
   const btnFull = document.getElementById('btn-full') as HTMLButtonElement;
@@ -248,5 +254,12 @@ export function renderAnalysisView(container: HTMLElement) {
     appState.analysisResult = currentResult;
     const evt = new CustomEvent('analysisEnded');
     window.dispatchEvent(evt);
+  });
+
+  const btnExtract = document.getElementById('btn-extract-glossary');
+  btnExtract?.addEventListener('click', () => {
+    switchParentTab('glossary');
+    // Note: We don't automatically trigger the AI extraction here because the user
+    // should choose the language tab first. We just Move them to the glossary.
   });
 }

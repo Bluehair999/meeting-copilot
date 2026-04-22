@@ -214,7 +214,13 @@ class AnalyzeRequest(BaseModel):
     api_key: Optional[str] = None
     participants: Optional[list[str]] = None
     recording_time: Optional[str] = None
+    recording_time: Optional[str] = None
     template_type: Optional[str] = "general"
+
+class ExtractTermsRequest(BaseModel):
+    script: str
+    target_lang: str # e.g. "Polish", "English", "Spanish"
+    api_key: Optional[str] = None
 
 @app.post("/api/analyze")
 async def analyze_script(req: AnalyzeRequest):
@@ -435,4 +441,58 @@ async def analyze_script(req: AnalyzeRequest):
             result = f"[Analysis Error] GPT 스크리닝 중 오류가 발생했습니다: {str(e)}\n\n## 🎙️ 100% 원본 스크립트\n\n{req.script}"
         
     return {"result": result}
+
+@app.post("/api/extract-terms")
+async def extract_terms(req: ExtractTermsRequest):
+    api_key = req.api_key
+    if not api_key:
+        return {"terms": [], "error": "API Key Required"}
+        
+    if not req.script or len(req.script.strip()) < 10:
+        return {"terms": [], "error": "대화 내용이 너무 짧거나 없습니다."}
+
+    current_client = AsyncOpenAI(api_key=api_key)
+    
+    system_prompt = f"""You are a Terminology Extraction Expert. 
+Your task is to analyze the provided meeting transcript and extract key technical terms, project-specific jargon, or unique proper nouns.
+For each term, provide a translation between Korean and {req.target_lang}.
+
+Return ONLY a JSON array of objects with the following structure:
+[
+  {{ "source": "Korean Word", "target": "{req.target_lang} Translation", "category": "Category (e.g. Infrastructure, Legal, Safety)" }},
+  ...
+]
+Do NOT include any explanations or markdown formatting (like ```json), just the raw JSON array string."""
+
+    try:
+        completion = await current_client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": f"Transcript to analyze:\n{req.script}"}
+            ],
+            response_format={ "type": "json_object" } if False else None # Some envs don't support response_format yet, so we'll just parse the content
+        )
+        content = completion.choices[0].message.content.strip()
+        
+        # Clean up possible markdown wraps
+        if content.startswith("```"):
+            content = re.sub(r"^```[a-zA-Z]*\n?", "", content)
+            if content.endswith("```"):
+                content = content[:-3].strip()
+        
+        terms = json.loads(content)
+        # If it returned a dict with a key like "terms", extract it. Otherwise expect a list.
+        if isinstance(terms, dict):
+            for key in ["terms", "terminology", "data"]:
+                if key in terms:
+                    terms = terms[key]
+                    break
+        
+        if not isinstance(terms, list):
+            return {"terms": [], "error": "AI가 리스트 형식을 반환하지 않았습니다."}
+            
+        return {"terms": terms}
+    except Exception as e:
+        return {"terms": [], "error": str(e)}
 

@@ -1,4 +1,4 @@
-import { createIcons, Plus, Download, Trash2, Globe, Languages, FileUp } from 'lucide';
+import { createIcons, Plus, Download, Trash2, Globe, Languages, FileUp, Sparkles, Check, X } from 'lucide';
 import { appState } from './state';
 
 export function renderGlossaryView(container: HTMLElement) {
@@ -12,12 +12,48 @@ export function renderGlossaryView(container: HTMLElement) {
                     <h2 style="display: flex; align-items: center; gap: 0.5rem;">
                         <i data-lucide="globe" style="color: var(--primary-color);"></i> Terminology Glossary
                     </h2>
-                    <div class="flex-row gap-1">
+                    <div class="flex-row gap-1" style="flex-wrap: wrap;">
+                        <button id="btn-ai-extract" class="btn btn-sm" style="background: rgba(79, 70, 229, 0.1); color: var(--primary-color); border-color: var(--primary-color);">
+                            <i data-lucide="sparkles"></i> AI Extract
+                        </button>
                         <label class="btn btn-sm" style="background: var(--surface-color-light); border-style: dashed;">
                             <i data-lucide="file-up"></i> Import CSV
                             <input type="file" id="glossary-import" accept=".csv" class="hidden">
                         </label>
                         <button id="btn-add-term" class="btn btn-primary btn-sm"><i data-lucide="plus"></i> Add Term</button>
+                    </div>
+                </div>
+
+                <div id="ai-extract-modal" class="hidden" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; display: flex; align-items: center; justify-content: center;">
+                    <div class="card" style="width: 90%; max-width: 800px; max-height: 85vh; overflow: hidden; display: flex; flex-direction: column;">
+                        <div class="card-header">
+                            <h3 style="display: flex; align-items: center; gap: 0.5rem;">
+                                <i data-lucide="sparkles" style="color: var(--primary-color);"></i> AI Suggested Terms
+                            </h3>
+                            <button id="btn-close-modal" class="btn btn-sm"><i data-lucide="x"></i></button>
+                        </div>
+                        <p class="text-sm" style="margin-bottom: 1rem;">최근 대화 내용에서 추출된 용어입니다. 번역을 수정하거나 필요한 용어만 선택하여 추가하세요.</p>
+                        
+                        <div style="flex-grow: 1; overflow-y: auto; margin-bottom: 1rem; border: 1px solid var(--border-color); border-radius: 8px;">
+                            <table style="width: 100%; border-collapse: collapse;">
+                                <thead style="position: sticky; top: 0; background: var(--surface-color); border-bottom: 2px solid var(--border-color); z-index: 1;">
+                                    <tr style="text-align: left;">
+                                        <th style="padding: 0.8rem; width: 40px;"><input type="checkbox" id="ai-select-all" checked></th>
+                                        <th style="padding: 0.8rem;">Source (KR)</th>
+                                        <th style="padding: 0.8rem;">Target (${activeLang})</th>
+                                        <th style="padding: 0.8rem;">Category</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="ai-suggestions-tbody">
+                                    <!-- AI Suggestions will appear here -->
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div class="flex-row gap-1" style="justify-content: flex-end;">
+                            <button id="btn-cancel-extract" class="btn">Cancel</button>
+                            <button id="btn-confirm-extract" class="btn btn-primary"><i data-lucide="check"></i> Add Selected to Glossary</button>
+                        </div>
                     </div>
                 </div>
 
@@ -58,11 +94,112 @@ export function renderGlossaryView(container: HTMLElement) {
 
         document.getElementById('btn-add-term')?.addEventListener('click', addNewTermPrompt);
         document.getElementById('glossary-import')?.addEventListener('change', handleCsvImport);
+        document.getElementById('btn-ai-extract')?.addEventListener('click', handleAiExtract);
+        document.getElementById('btn-close-modal')?.addEventListener('click', closeModal);
+        document.getElementById('btn-cancel-extract')?.addEventListener('click', closeModal);
+        document.getElementById('btn-confirm-extract')?.addEventListener('click', confirmAiExtract);
+        document.getElementById('ai-select-all')?.addEventListener('change', (e) => {
+            const checked = (e.target as HTMLInputElement).checked;
+            document.querySelectorAll('.ai-suggestion-checkbox').forEach(cb => (cb as HTMLInputElement).checked = checked);
+        });
 
         renderTerms();
     }
 
-    function renderTerms() {
+    const modal = () => document.getElementById('ai-extract-modal')!;
+    const closeModal = () => modal().classList.add('hidden');
+
+    async function handleAiExtract() {
+        if (!appState.openaiApiKey) {
+            alert('API Key가 필요합니다. 상단에서 입력해 주세요.');
+            return;
+        }
+
+        const script = appState.script || "";
+        if (script.length < 50) {
+            alert('대화 내용이 부족합니다. 회의를 진행한 후 추출해 주세요.');
+            return;
+        }
+
+        const btn = document.getElementById('btn-ai-extract') as HTMLButtonElement;
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i data-lucide="sparkles" class="animate-spin"></i> Extracting...';
+        btn.disabled = true;
+
+        try {
+            const backendHost = import.meta.env.VITE_BACKEND_URL || `${window.location.hostname}:8000`;
+            const resp = await fetch(`${window.location.protocol}//${backendHost}/api/extract-terms`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    script: script,
+                    target_lang: activeLang,
+                    api_key: appState.openaiApiKey
+                })
+            });
+
+            const data = await resp.json();
+            if (data.error) {
+                alert('추출 오류: ' + data.error);
+                return;
+            }
+
+            renderAiSuggestions(data.terms);
+            modal().classList.remove('hidden');
+        } catch (e: any) {
+            alert('연결 오류: ' + e.message);
+        } finally {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+            createIcons({ icons: { Sparkles } });
+        }
+    }
+
+    function renderAiSuggestions(terms: any[]) {
+        const tbody = document.getElementById('ai-suggestions-tbody')!;
+        tbody.innerHTML = terms.map((term, idx) => `
+            <tr style="border-bottom: 1px solid var(--border-color);">
+                <td style="padding: 0.8rem;"><input type="checkbox" class="ai-suggestion-checkbox" checked data-idx="${idx}"></td>
+                <td style="padding: 0.5rem;"><input type="text" class="ai-edit-source" value="${term.source}" style="width: 100%; padding: 0.3rem;"></td>
+                <td style="padding: 0.5rem;"><input type="text" class="ai-edit-target" value="${term.target}" style="width: 100%; padding: 0.3rem;"></td>
+                <td style="padding: 0.5rem;"><input type="text" class="ai-edit-category" value="${term.category || 'AI'}" style="width: 100%; padding: 0.3rem;"></td>
+            </tr>
+        `).join('');
+    }
+
+    function confirmAiExtract() {
+        const rows = document.querySelectorAll('#ai-suggestions-tbody tr');
+        let addedCount = 0;
+
+        rows.forEach(row => {
+            const cb = row.querySelector('.ai-suggestion-checkbox') as HTMLInputElement;
+            if (cb.checked) {
+                const source = (row.querySelector('.ai-edit-source') as HTMLInputElement).value;
+                const target = (row.querySelector('.ai-edit-target') as HTMLInputElement).value;
+                const category = (row.querySelector('.ai-edit-category') as HTMLInputElement).value;
+
+                if (source && target) {
+                    if (!appState.glossary[activeLang]) appState.glossary[activeLang] = [];
+                    appState.glossary[activeLang].push({
+                        id: Date.now().toString() + Math.random(),
+                        source,
+                        target,
+                        category
+                    });
+                    addedCount++;
+                }
+            }
+        });
+
+        if (addedCount > 0) {
+            saveGlossary();
+            renderTerms();
+            closeModal();
+            alert(`${addedCount}개의 용어가 추가되었습니다.`);
+        } else {
+            alert('선택된 용어가 없습니다.');
+        }
+    }
         const tbody = document.getElementById('glossary-tbody')!;
         const empty = document.getElementById('glossary-empty')!;
         const terms = appState.glossary[activeLang] || [];
