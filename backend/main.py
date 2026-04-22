@@ -32,6 +32,7 @@ async def websocket_record(websocket: WebSocket):
     await websocket.accept()
     input_lang = "ko"
     translate_lang = "none"
+    custom_vocab = ""
     last_transcript = "" # 3조 역할 (이전 문맥 기억용)
     glossary = [] # [{source, target}]
     
@@ -213,7 +214,6 @@ class AnalyzeRequest(BaseModel):
     is_summary: bool
     api_key: Optional[str] = None
     participants: Optional[list[str]] = None
-    recording_time: Optional[str] = None
     recording_time: Optional[str] = None
     template_type: Optional[str] = "general"
 
