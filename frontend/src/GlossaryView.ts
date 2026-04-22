@@ -200,6 +200,8 @@ export function renderGlossaryView(container: HTMLElement) {
             alert('선택된 용어가 없습니다.');
         }
     }
+
+    function renderTerms() {
         const tbody = document.getElementById('glossary-tbody')!;
         const empty = document.getElementById('glossary-empty')!;
         const terms = appState.glossary[activeLang] || [];
