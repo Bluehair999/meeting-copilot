@@ -585,3 +585,22 @@ def delete_term(term_id: str):
         conn.close()
     return {"status": "success"}
 
+@app.post("/api/glossary/delete-batch")
+def delete_batch_terms(req: dict):
+    term_ids = req.get("ids", [])
+    if not term_ids:
+        return {"status": "success"}
+        
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    try:
+        placeholders = ', '.join(['?'] * len(term_ids))
+        query = f"DELETE FROM glossary WHERE id IN ({placeholders})"
+        cursor.execute(query, tuple(term_ids))
+        conn.commit()
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+    finally:
+        conn.close()
+    return {"status": "success"}
+

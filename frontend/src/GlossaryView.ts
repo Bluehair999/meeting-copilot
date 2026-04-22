@@ -1,4 +1,4 @@
-import { createIcons, Plus, Download, Trash2, Globe, Languages, FileUp, Sparkles, Check, X } from 'lucide';
+import { createIcons, Plus, Download, Trash2, Globe, Languages, FileUp, Sparkles, Check, X, Edit } from 'lucide';
 import { appState } from './state';
 
 export function renderGlossaryView(container: HTMLElement) {
@@ -15,6 +15,9 @@ export function renderGlossaryView(container: HTMLElement) {
                     <div class="flex-row gap-1" style="flex-wrap: wrap;">
                         <button id="btn-ai-extract" class="btn btn-sm" style="background: var(--primary-color); color: white; border-color: var(--primary-color); font-weight: bold;">
                             <i data-lucide="sparkles"></i> AI Extract (${appState.script.length})
+                        </button>
+                        <button id="btn-delete-selected" class="btn btn-sm" style="border-color: var(--danger-color); color: var(--danger-color);">
+                            <i data-lucide="trash-2"></i> Delete Selected
                         </button>
                         <label class="btn btn-sm" style="background: var(--surface-color-light); border-style: dashed;">
                             <i data-lucide="file-up"></i> Import CSV
@@ -65,10 +68,11 @@ export function renderGlossaryView(container: HTMLElement) {
                     <table class="glossary-table" style="width: 100%; border-collapse: collapse;">
                         <thead>
                             <tr style="text-align: left; border-bottom: 2px solid var(--border-color);">
+                                <th style="padding: 0.8rem; width: 40px;"><input type="checkbox" id="glossary-select-all"></th>
                                 <th style="padding: 0.8rem;">Source (KR/Original)</th>
                                 <th style="padding: 0.8rem;">Target (Translation)</th>
                                 <th style="padding: 0.8rem;">Category</th>
-                                <th style="padding: 0.8rem; width: 50px;"></th>
+                                <th style="padding: 0.8rem; width: 80px;">Actions</th>
                             </tr>
                         </thead>
                         <tbody id="glossary-tbody">
@@ -102,6 +106,13 @@ export function renderGlossaryView(container: HTMLElement) {
             const checked = (e.target as HTMLInputElement).checked;
             document.querySelectorAll('.ai-suggestion-checkbox').forEach(cb => (cb as HTMLInputElement).checked = checked);
         });
+
+        document.getElementById('glossary-select-all')?.addEventListener('change', (e) => {
+            const checked = (e.target as HTMLInputElement).checked;
+            document.querySelectorAll('.term-checkbox').forEach(cb => (cb as HTMLInputElement).checked = checked);
+        });
+
+        document.getElementById('btn-delete-selected')?.addEventListener('click', deleteSelectedTerms);
 
         // Initial load from backend if not already done
         if (Object.keys(appState.glossary).length === 0) {
@@ -260,18 +271,22 @@ export function renderGlossaryView(container: HTMLElement) {
         empty.classList.add('hidden');
         tbody.innerHTML = terms.map(term => `
             <tr style="border-bottom: 1px solid var(--border-color);">
+                <td style="padding: 0.8rem;"><input type="checkbox" class="term-checkbox" data-id="${term.id}"></td>
                 <td style="padding: 0.8rem;">${term.source}</td>
                 <td style="padding: 0.8rem;">${term.target}</td>
                 <td style="padding: 0.8rem;"><span class="tag" style="background: rgba(0,0,0,0.05); color: var(--text-main);">${term.category || 'General'}</span></td>
-                <td style="padding: 0.8rem;">
-                    <button class="btn-delete-row" style="background: none; border: none; color: var(--danger-color); cursor: pointer;" data-id="${term.id}">
+                <td style="padding: 0.8rem; display: flex; gap: 0.5rem; align-items: center;">
+                    <button class="btn-edit-row" style="background: none; border: none; color: var(--primary-color); cursor: pointer;" data-id="${term.id}" title="Edit">
+                        <i data-lucide="edit" style="width: 16px;"></i>
+                    </button>
+                    <button class="btn-delete-row" style="background: none; border: none; color: var(--danger-color); cursor: pointer;" data-id="${term.id}" title="Delete">
                         <i data-lucide="trash-2" style="width: 16px;"></i>
                     </button>
                 </td>
             </tr>
         `).join('');
 
-        createIcons({ icons: { Trash2 } });
+        createIcons({ icons: { Trash2, Edit } });
 
         document.querySelectorAll('.btn-delete-row').forEach(btn => {
             btn.addEventListener('click', (e) => {
@@ -279,7 +294,66 @@ export function renderGlossaryView(container: HTMLElement) {
                 deleteTerm(id!);
             });
         });
+
+        document.querySelectorAll('.btn-edit-row').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const id = (e.currentTarget as HTMLElement).dataset.id;
+                editTermPrompt(id!);
+            });
+        });
     }
+
+    async function deleteSelectedTerms() {
+        const checkedCbs = document.querySelectorAll('.term-checkbox:checked');
+        if (checkedCbs.length === 0) {
+            alert('삭제할 용어를 선택해 주세요.');
+            return;
+        }
+
+        if (confirm(`${checkedCbs.length}개의 용어를 삭제하시겠습니까?`)) {
+            const ids = Array.from(checkedCbs).map(cb => (cb as HTMLInputElement).dataset.id!);
+            
+            try {
+                const backendHost = import.meta.env.VITE_BACKEND_URL || `${window.location.hostname}:8000`;
+                await fetch(`${window.location.protocol}//${backendHost}/api/glossary/delete-batch`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ids })
+                });
+                
+                appState.glossary[activeLang] = appState.glossary[activeLang].filter(t => !ids.includes(t.id));
+                saveGlossary();
+                renderTerms();
+                
+                const selectAll = document.getElementById('glossary-select-all') as HTMLInputElement;
+                if (selectAll) selectAll.checked = false;
+            } catch (e) {
+                console.error("Failed to delete terms in batch:", e);
+                alert("삭제 중 오류가 발생했습니다.");
+            }
+        }
+    }
+
+    function editTermPrompt(id: string) {
+        const term = appState.glossary[activeLang].find(t => t.id === id);
+        if (!term) return;
+
+        const newSource = prompt('Edit Source (KR/Original):', term.source);
+        if (newSource === null) return;
+        const newTarget = prompt('Edit Target (Translation):', term.target);
+        if (newTarget === null) return;
+        const newCategory = prompt('Edit Category:', term.category || 'General');
+        if (newCategory === null) return;
+
+        term.source = newSource;
+        term.target = newTarget;
+        term.category = newCategory;
+
+        syncTermsToBackend([{ ...term, language_tab: activeLang }]);
+        saveGlossary();
+        renderTerms();
+    }
+
 
     function addNewTermPrompt() {
         const source = prompt('Source word (KR or Original):');
