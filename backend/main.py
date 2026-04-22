@@ -8,9 +8,29 @@ import re
 from openai import AsyncOpenAI
 from dotenv import load_dotenv
 
+import sqlite3
+
 load_dotenv()
 
-# client instance is now created per-request with the user's API key
+# Database Setup
+DB_PATH = os.path.join(os.path.dirname(__file__), "glossary.db")
+
+def init_db():
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS glossary (
+            id TEXT PRIMARY KEY,
+            source TEXT NOT NULL,
+            target TEXT NOT NULL,
+            category TEXT,
+            language_tab TEXT NOT NULL
+        )
+    """)
+    conn.commit()
+    conn.close()
+
+init_db()
 
 app = FastAPI(title="Meeting Copilot API")
 
@@ -228,6 +248,16 @@ class ExtractTermsRequest(BaseModel):
     script: str
     target_lang: str # e.g. "Polish", "English", "Spanish"
     api_key: Optional[str] = None
+
+class GlossaryTerm(BaseModel):
+    id: str
+    source: str
+    target: str
+    category: Optional[str] = "General"
+    language_tab: str
+
+class GlossarySyncRequest(BaseModel):
+    terms: list[GlossaryTerm]
 
 @app.post("/api/analyze")
 async def analyze_script(req: AnalyzeRequest):
@@ -502,4 +532,56 @@ Do NOT include any explanations or markdown formatting (like ```json), just the 
         return {"terms": terms}
     except Exception as e:
         return {"terms": [], "error": str(e)}
+
+@app.get("/api/glossary")
+def get_glossary():
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM glossary")
+    rows = cursor.fetchall()
+    conn.close()
+    
+    result = {}
+    for row in rows:
+        tab = row["language_tab"]
+        if tab not in result:
+            result[tab] = []
+        result[tab].append({
+            "id": row["id"],
+            "source": row["source"],
+            "target": row["target"],
+            "category": row["category"]
+        })
+    return result
+
+@app.post("/api/glossary")
+def sync_glossary(req: GlossarySyncRequest):
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    try:
+        for term in req.terms:
+            cursor.execute("""
+                INSERT OR REPLACE INTO glossary (id, source, target, category, language_tab)
+                VALUES (?, ?, ?, ?, ?)
+            """, (term.id, term.source, term.target, term.category, term.language_tab))
+        conn.commit()
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+    finally:
+        conn.close()
+    return {"status": "success"}
+
+@app.delete("/api/glossary/{term_id}")
+def delete_term(term_id: str):
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    try:
+        cursor.execute("DELETE FROM glossary WHERE id = ?", (term_id,))
+        conn.commit()
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+    finally:
+        conn.close()
+    return {"status": "success"}
 

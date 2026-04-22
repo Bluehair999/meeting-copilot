@@ -103,8 +103,32 @@ export function renderGlossaryView(container: HTMLElement) {
             document.querySelectorAll('.ai-suggestion-checkbox').forEach(cb => (cb as HTMLInputElement).checked = checked);
         });
 
-        renderTerms();
+        // Initial load from backend if not already done
+        if (Object.keys(appState.glossary).length === 0) {
+            fetchSharedGlossary();
+        } else {
+            renderTerms();
+        }
     }
+
+    async function fetchSharedGlossary() {
+        try {
+            const backendHost = import.meta.env.VITE_BACKEND_URL || `${window.location.hostname}:8000`;
+            const resp = await fetch(`${window.location.protocol}//${backendHost}/api/glossary`);
+            const data = await resp.json();
+            appState.glossary = data;
+            renderTerms();
+            // Also sync to local storage for quick access next time
+            localStorage.setItem('glossary_data', JSON.stringify(appState.glossary));
+        } catch (e) {
+            console.error("Failed to fetch shared glossary:", e);
+            // Fallback to local storage if available
+            const saved = localStorage.getItem('glossary_data');
+            if (saved) appState.glossary = JSON.parse(saved);
+            renderTerms();
+        }
+    }
+
 
     const modal = () => document.getElementById('ai-extract-modal')!;
     const closeModal = () => modal().classList.add('hidden');
@@ -173,6 +197,7 @@ export function renderGlossaryView(container: HTMLElement) {
     function confirmAiExtract() {
         const rows = document.querySelectorAll('#ai-suggestions-tbody tr');
         let addedCount = 0;
+        const newTerms: any[] = [];
 
         rows.forEach(row => {
             const cb = row.querySelector('.ai-suggestion-checkbox') as HTMLInputElement;
@@ -182,19 +207,22 @@ export function renderGlossaryView(container: HTMLElement) {
                 const category = (row.querySelector('.ai-edit-category') as HTMLInputElement).value;
 
                 if (source && target) {
-                    if (!appState.glossary[activeLang]) appState.glossary[activeLang] = [];
-                    appState.glossary[activeLang].push({
+                    const newTerm = {
                         id: Date.now().toString() + Math.random(),
                         source,
                         target,
                         category
-                    });
+                    };
+                    if (!appState.glossary[activeLang]) appState.glossary[activeLang] = [];
+                    appState.glossary[activeLang].push(newTerm);
+                    newTerms.push({ ...newTerm, language_tab: activeLang });
                     addedCount++;
                 }
             }
         });
 
         if (addedCount > 0) {
+            syncTermsToBackend(newTerms);
             saveGlossary();
             renderTerms();
             closeModal();
@@ -203,6 +231,20 @@ export function renderGlossaryView(container: HTMLElement) {
             alert('선택된 용어가 없습니다.');
         }
     }
+
+    async function syncTermsToBackend(terms: any[]) {
+        try {
+            const backendHost = import.meta.env.VITE_BACKEND_URL || `${window.location.hostname}:8000`;
+            await fetch(`${window.location.protocol}//${backendHost}/api/glossary`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ terms })
+            });
+        } catch (e) {
+            console.error("Failed to sync terms to backend:", e);
+        }
+    }
+
 
     function renderTerms() {
         const tbody = document.getElementById('glossary-tbody')!;
@@ -255,17 +297,31 @@ export function renderGlossaryView(container: HTMLElement) {
 
         if (!appState.glossary[activeLang]) appState.glossary[activeLang] = [];
         appState.glossary[activeLang].push(newTerm);
+        
+        syncTermsToBackend([{ ...newTerm, language_tab: activeLang }]);
         saveGlossary();
         renderTerms();
     }
 
-    function deleteTerm(id: string) {
+
+    async function deleteTerm(id: string) {
         if (confirm('용어를 삭제하시겠습니까?')) {
             appState.glossary[activeLang] = appState.glossary[activeLang].filter(t => t.id !== id);
+            
+            try {
+                const backendHost = import.meta.env.VITE_BACKEND_URL || `${window.location.hostname}:8000`;
+                await fetch(`${window.location.protocol}//${backendHost}/api/glossary/${id}`, {
+                    method: 'DELETE'
+                });
+            } catch (e) {
+                console.error("Failed to delete term from backend:", e);
+            }
+
             saveGlossary();
             renderTerms();
         }
     }
+
 
     function handleCsvImport(e: Event) {
         const file = (e.target as HTMLInputElement).files?.[0];

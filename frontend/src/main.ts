@@ -193,5 +193,18 @@ function startHeartbeat() {
   }, 10 * 60 * 1000);
 }
 
+async function initGlossary() {
+  try {
+    const backendHost = import.meta.env.VITE_BACKEND_URL || `${window.location.hostname}:8000`;
+    const resp = await fetch(`${window.location.protocol}//${backendHost}/api/glossary`);
+    const data = await resp.json();
+    appState.glossary = data;
+    console.log("Shared glossary initialized from backend.");
+  } catch (e) {
+    console.error("Failed to initialize shared glossary:", e);
+  }
+}
+
 startHeartbeat();
+initGlossary();
 switchParentTab('minutes');
