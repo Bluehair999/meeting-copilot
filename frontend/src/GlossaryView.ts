@@ -425,10 +425,15 @@ export function renderGlossaryView(container: HTMLElement) {
 
             if (newTerms.length > 0) {
                 if (!appState.glossary[activeLang]) appState.glossary[activeLang] = [];
+                // Map the language tab to each term for backend sync
+                const termsToSync = newTerms.map(t => ({ ...t, language_tab: activeLang }));
+                
                 appState.glossary[activeLang] = [...appState.glossary[activeLang], ...newTerms];
+                
+                syncTermsToBackend(termsToSync);
                 saveGlossary();
                 renderTerms();
-                alert(`${newTerms.length}개의 용어를 불러왔습니다.`);
+                alert(`${newTerms.length}개의 용어를 불러왔습니다. 모든 사용자에게 공유되었습니다.`);
             } else {
                 alert('유효한 용어를 찾지 못했습니다. CSV 형식을 확인해 주세요. (예: 원문,번역문,범주)');
             }
