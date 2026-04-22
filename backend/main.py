@@ -96,17 +96,22 @@ async def websocket_record(websocket: WebSocket):
                     # 3조 역할: 앞선 문맥 전달 (Overlapping 중복 방지 및 맥락 유지)
                     if last_transcript:
                         prompt_hint += f" (이전 문장: {last_transcript})"
+                    
+                    # 언어 자동 감지 모드인 경우 language=None으로 설정
+                    stt_lang = None if input_lang == "auto" else input_lang
                         
                     with open(tmp_path, "rb") as audio_file:
                         transcript = await current_client.audio.transcriptions.create(
                             model="whisper-1", 
                             file=audio_file,
-                            language=input_lang,
+                            language=stt_lang,
                             prompt=prompt_hint,
-                            temperature=0.0
+                            temperature=0.0,
+                            response_format="verbose_json"
                         )
                     
                     original_text = transcript.text.strip()
+                    detected_lang_code = getattr(transcript, "language", input_lang)
                     
                     # 이모티콘 제거 정규식 (유니코드 Supplementary Planes를 대부분 날림)
                     original_text = re.sub(r'[\U00010000-\U0010ffff]', '', original_text)
@@ -145,14 +150,29 @@ async def websocket_record(websocket: WebSocket):
                         
                     # 다음 청크를 위해 마지막 50글자만 맥락으로 저장
                     last_transcript = original_text[-50:] if len(original_text) > 50 else original_text
-                        
-                    if translate_lang == "none":
-                        await websocket.send_json({"text": original_text})
+                    
+                    # 상호 통역(Auto-Interpreter) 로직
+                    current_target_lang = translate_lang
+                    if input_lang == "auto":
+                        # 감지된 언어에 따라 번역 방향 결정 (기본: ko <-> pl)
+                        if detected_lang_code == "korean" or detected_lang_code == "ko":
+                            current_target_lang = "pl"
+                        elif detected_lang_code == "polish" or detected_lang_code == "pl":
+                            current_target_lang = "ko"
+                        else:
+                            # 그 외 언어는 기존 설정된 translate_lang 유지 또는 기본값
+                            current_target_lang = translate_lang if translate_lang != "none" else "en"
+
+                    if current_target_lang == "none":
+                        await websocket.send_json({
+                            "text": original_text,
+                            "source_lang": detected_lang_code
+                        })
                     else:
                         system_prompt = f"""You are a strict and highly accurate translator.
-The original text is strictly in the '{input_lang}' language.
-You must translate this text directly into the '{translate_lang}' language.
-Output ONLY the final translated text in '{translate_lang}'.
+The original text is strictly in the '{detected_lang_code}' language.
+You must translate this text directly into the '{current_target_lang}' language.
+Output ONLY the final translated text in '{current_target_lang}'.
 Do NOT output the original language, and do NOT add any conversational fillers or explanations.
 """
 
@@ -166,7 +186,9 @@ Do NOT output the original language, and do NOT add any conversational fillers o
                         translated_text = completion.choices[0].message.content.strip()
                         await websocket.send_json({
                             "original": original_text,
-                            "translated": translated_text
+                            "translated": translated_text,
+                            "source_lang": detected_lang_code,
+                            "target_lang": current_target_lang
                         })
                         
                 except Exception as e:

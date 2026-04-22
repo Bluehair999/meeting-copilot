@@ -19,6 +19,7 @@ export function renderLiveTransView(container: HTMLElement) {
           <div class="flex-col" style="flex: 1; align-items: center; gap: 0.3rem;">
             <span style="font-size: 0.7rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">Input</span>
             <select id="live-input-lang" style="width: 100%; text-align: center; font-weight: 600;">
+              <option value="auto">Auto Detect (KR-PL)</option>
               <option value="ko">Korean</option>
               <option value="en">English</option>
               <option value="pl">Polish</option>
@@ -117,25 +118,45 @@ export function renderLiveTransView(container: HTMLElement) {
   let countdownInterval: number | null = null;
   let heartbeatInterval: number | null = null;
 
+  function getFlag(lang: string) {
+    if (!lang) return '🌐';
+    const l = lang.toLowerCase();
+    if (l.includes('ko')) return '🇰🇷';
+    if (l.includes('pl')) return '🇵🇱';
+    if (l.includes('en')) return '🇺🇸';
+    return '🌐';
+  }
+
   // Render existing bubbles
   function renderBubbles() {
     if (appState.liveTransData.length > 0) {
       document.getElementById('live-placeholder')?.classList.add('hidden');
       chatContainer.innerHTML = '';
-      appState.liveTransData.forEach((data, idx) => {
-        addBubbleUI(data, idx % 2 === 0);
+      appState.liveTransData.forEach((data) => {
+        addBubbleUI(data);
       });
       chatContainer.scrollTop = chatContainer.scrollHeight;
     }
   }
 
-  function addBubbleUI(data: { original: string, translated: string }, isAlt: boolean) {
+  function addBubbleUI(data: any) {
     document.getElementById('live-placeholder')?.classList.add('hidden');
     const bubble = document.createElement('div');
-    bubble.className = `chat-bubble ${isAlt ? 'bubble-received' : 'bubble-sent'}`;
+    bubble.className = 'chat-bubble bubble-received';
+    bubble.style.maxWidth = '90%';
+    bubble.style.width = 'fit-content';
+    
+    // 소스/타겟 언어 표시 (상호 통역 모드 대응)
+    const sourceFlag = getFlag(data.source_lang || inputLangSelect.value);
+    const targetFlag = getFlag(data.target_lang || outputLangSelect.value);
+
     bubble.innerHTML = `
-      <div class="bubble-original">${data.original}</div>
-      <div class="bubble-translated">${data.translated}</div>
+      <div class="bubble-original" style="display: flex; align-items: center; gap: 0.4rem;">
+        <span style="font-size: 1.1rem;">${sourceFlag}</span> ${data.original}
+      </div>
+      <div class="bubble-translated" style="display: flex; align-items: center; gap: 0.6rem;">
+        <span style="font-size: 1.3rem;">${targetFlag}</span> ${data.translated}
+      </div>
     `;
     chatContainer.appendChild(bubble);
     chatContainer.scrollTop = chatContainer.scrollHeight;
@@ -301,8 +322,14 @@ export function renderLiveTransView(container: HTMLElement) {
         const data = JSON.parse(e.data);
         if (data.original && data.translated) {
             appState.liveTransData.push(data);
-            addBubbleUI(data, appState.liveTransData.length % 2 === 0);
+            addBubbleUI(data);
             timeRemaining = 60; // Reset on activity
+        } else if (data.text) {
+            // 번역 없는 단일 텍스트 처리
+            const singleData = { original: data.text, translated: '-', source_lang: data.source_lang };
+            appState.liveTransData.push(singleData);
+            addBubbleUI(singleData);
+            timeRemaining = 60;
         }
       };
 
