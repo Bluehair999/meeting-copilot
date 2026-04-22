@@ -321,12 +321,13 @@ export function renderLiveTransView(container: HTMLElement) {
       ws.onmessage = (e) => {
         const data = JSON.parse(e.data);
         if (data.original && data.translated) {
-            appState.liveTransData.push(data);
-            addBubbleUI(data);
+            const fullData = { ...data, timestamp: Date.now() };
+            appState.liveTransData.push(fullData);
+            addBubbleUI(fullData);
             timeRemaining = 60; // Reset on activity
         } else if (data.text) {
             // 번역 없는 단일 텍스트 처리
-            const singleData = { original: data.text, translated: '-', source_lang: data.source_lang };
+            const singleData = { original: data.text, translated: '-', source_lang: data.source_lang, timestamp: Date.now() };
             appState.liveTransData.push(singleData);
             addBubbleUI(singleData);
             timeRemaining = 60;
