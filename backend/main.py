@@ -166,7 +166,14 @@ async def websocket_record(websocket: WebSocket):
                             # 그 외 언어는 기존 설정된 translate_lang 유지 또는 기본값
                             current_target_lang = translate_lang if translate_lang != "none" else "en"
 
+                    if current_target_lang == "none":
+                        # 번역 없이 원문만 송신
+                        await websocket.send_json({
+                            "original": original_text,
+                            "source_lang": detected_lang_code
+                        })
                     else:
+                        # Glossary 및 AI 번역 수행
                         glossary_prompt = ""
                         if glossary:
                             terms = "\n".join([f"- {g.get('source')}: {g.get('target')}" for g in glossary])
