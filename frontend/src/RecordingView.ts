@@ -728,6 +728,7 @@ export function renderRecordingView(container: HTMLElement) {
 
     const compiledScript = fullScriptData.join('\n');
     appState.script = compiledScript;
+    localStorage.setItem('meeting_script', appState.script);
     const evt = new CustomEvent('recordingEnded');
     window.dispatchEvent(evt);
   }
@@ -744,6 +745,7 @@ export function renderRecordingView(container: HTMLElement) {
     if (confirm("정말로 모든 녹음 내용을 지우고 처음부터 다시 시작하시겠습니까? (이 작업은 되돌릴 수 없습니다.)")) {
       fullScriptData = [];
       appState.script = "";
+      localStorage.removeItem('meeting_script');
       appState.analysisResult = "";
       scriptContainer.innerHTML = '';
       const ph = document.createElement('div');

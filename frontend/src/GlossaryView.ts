@@ -115,11 +115,14 @@ export function renderGlossaryView(container: HTMLElement) {
             return;
         }
 
-        const script = appState.script || "";
+        const script = appState.script || localStorage.getItem('meeting_script') || "";
         if (script.length < 50) {
-            alert('대화 내용이 부족합니다. 회의를 진행한 후 추출해 주세요.');
+            alert(`대화 내용이 부족합니다. (현재: ${script.length}자, 최소 50자 필요)\n회의를 진행하거나 통역기를 사용한 후 추출해 주세요.`);
             return;
         }
+
+        // Sync local script to appState if it was in localStorage
+        if (!appState.script && script) appState.script = script;
 
         const btn = document.getElementById('btn-ai-extract') as HTMLButtonElement;
         const originalText = btn.innerHTML;

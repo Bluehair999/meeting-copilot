@@ -336,17 +336,26 @@ export function renderLiveTransView(container: HTMLElement) {
 
       ws.onmessage = (e) => {
         const data = JSON.parse(e.data);
+        let line = "";
         if (data.original && data.translated) {
             const fullData = { ...data, timestamp: Date.now() };
             appState.liveTransData.push(fullData);
             addBubbleUI(fullData);
+            line = `[Original] ${data.original}\n[Translated] ${data.translated}`;
             timeRemaining = 60; // Reset on activity
         } else if (data.text) {
             // 번역 없는 단일 텍스트 처리
             const singleData = { original: data.text, translated: '-', source_lang: data.source_lang, timestamp: Date.now() };
             appState.liveTransData.push(singleData);
             addBubbleUI(singleData);
+            line = data.text;
             timeRemaining = 60;
+        }
+
+        if (line) {
+            if (appState.script) appState.script += "\n" + line;
+            else appState.script = line;
+            localStorage.setItem('meeting_script', appState.script);
         }
       };
 
@@ -393,6 +402,8 @@ export function renderLiveTransView(container: HTMLElement) {
   btnClear.addEventListener('click', () => {
     if (confirm("대화 기록을 모두 삭제하시겠습니까?")) {
       appState.liveTransData = [];
+      appState.script = "";
+      localStorage.removeItem('meeting_script');
       chatContainer.innerHTML = '';
       document.getElementById('live-placeholder')?.classList.remove('hidden');
     }
