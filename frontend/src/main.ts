@@ -13,6 +13,7 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
       <div style="display: flex; align-items: center; gap: 0.5rem;">
         <i data-lucide="mic" style="color: var(--primary-color);"></i>
         <h1 class="text-gradient" style="margin: 0; line-height: 1;">MEETING Copilot</h1>
+        <span style="font-size: 0.7rem; color: var(--text-muted); align-self: flex-end; margin-bottom: 2px;">v1.0.4</span>
         <button id="btn-env-toggle" class="btn btn-sm" style="font-size: 0.75rem; padding: 0.3rem 0.5rem; margin-left: 1rem; border-color: var(--border-color); display: flex; align-items: center; gap: 0.3rem;" title="PC/모바일 모드 전환">
           <i data-lucide="${appState.isMobileMode ? 'smartphone' : 'monitor'}" id="env-icon" style="width: 14px; height: 14px;"></i> <span id="env-text">${appState.isMobileMode ? '모바일 환경' : 'PC 환경'}</span>
         </button>
