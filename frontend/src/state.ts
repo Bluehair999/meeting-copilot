@@ -1,6 +1,6 @@
 export const appState = {
   participants: [] as string[],
-  script: "",
+  script: localStorage.getItem('meeting_script') || "",
   analysisResult: "",
   openaiApiKey: "",
   isMobileMode: /Mobi|Android|iPhone/i.test(navigator.userAgent) || (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia),

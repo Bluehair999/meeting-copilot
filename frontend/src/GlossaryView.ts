@@ -14,7 +14,7 @@ export function renderGlossaryView(container: HTMLElement) {
                     </h2>
                     <div class="flex-row gap-1" style="flex-wrap: wrap;">
                         <button id="btn-ai-extract" class="btn btn-sm" style="background: var(--primary-color); color: white; border-color: var(--primary-color); font-weight: bold;">
-                            <i data-lucide="sparkles"></i> AI Extract
+                            <i data-lucide="sparkles"></i> AI Extract (${appState.script.length})
                         </button>
                         <label class="btn btn-sm" style="background: var(--surface-color-light); border-style: dashed;">
                             <i data-lucide="file-up"></i> Import CSV
