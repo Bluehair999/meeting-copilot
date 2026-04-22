@@ -10,10 +10,10 @@ export function renderGlossaryView(container: HTMLElement) {
             <div class="card flex-col gap-2">
                 <div class="card-header">
                     <h2 style="display: flex; align-items: center; gap: 0.5rem;">
-                        <i data-lucide="globe" style="color: var(--primary-color);"></i> Terminology Glossary
+                        <i data-lucide="globe" style="color: var(--primary-color);"></i> Terminology AI Glossary
                     </h2>
                     <div class="flex-row gap-1" style="flex-wrap: wrap;">
-                        <button id="btn-ai-extract" class="btn btn-sm" style="background: rgba(79, 70, 229, 0.1); color: var(--primary-color); border-color: var(--primary-color);">
+                        <button id="btn-ai-extract" class="btn btn-sm" style="background: var(--primary-color); color: white; border-color: var(--primary-color); font-weight: bold;">
                             <i data-lucide="sparkles"></i> AI Extract
                         </button>
                         <label class="btn btn-sm" style="background: var(--surface-color-light); border-style: dashed;">
