@@ -82,7 +82,7 @@ export function renderGlossaryView(container: HTMLElement) {
             </div>
         `;
 
-        createIcons({ icons: { Plus, Download, Trash2, Globe, Languages, FileUp } });
+        createIcons({ icons: { Plus, Download, Trash2, Globe, Languages, FileUp, Sparkles, Check, X } });
 
         // Event Listeners for sub-tabs
         document.querySelectorAll('#glossary-lang-tabs .sub-tab-btn').forEach(btn => {
@@ -151,7 +151,7 @@ export function renderGlossaryView(container: HTMLElement) {
         } finally {
             btn.innerHTML = originalText;
             btn.disabled = false;
-            createIcons({ icons: { Sparkles } });
+            createIcons({ icons: { Sparkles, Check, X } });
         }
     }
 
