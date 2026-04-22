@@ -216,7 +216,23 @@ export function renderLiveTransView(container: HTMLElement) {
     const wsPromise = new Promise<WebSocket>((resolve, reject) => {
         const socket = new WebSocket(`${wsProtocol}//${backendHost}/ws/record`);
         socket.onopen = () => {
-            socket.send(JSON.stringify({ type: "init", inputLang, translateLang, apiKey: appState.openaiApiKey }));
+            // Collect relevant glossary terms (Global + currently relevant languages)
+            const globalTerms = appState.glossary['Global'] || [];
+            const inputTerms = appState.glossary[inputLang === 'auto' ? 'Korean' : (inputLang === 'ko' ? 'Korean' : (inputLang === 'pl' ? 'Polish' : 'English'))] || [];
+            const targetTerms = appState.glossary[translateLang === 'pl' ? 'Polish' : (translateLang === 'ko' ? 'Korean' : 'English')] || [];
+            
+            const combinedGlossary = [...globalTerms, ...inputTerms, ...targetTerms].map(t => ({
+                source: t.source,
+                target: t.target
+            }));
+
+            socket.send(JSON.stringify({ 
+                type: "init", 
+                inputLang, 
+                translateLang, 
+                apiKey: appState.openaiApiKey,
+                glossary: combinedGlossary
+            }));
             resolve(socket);
         };
         socket.onerror = () => reject(new Error("Server connection failed"));

@@ -1,9 +1,10 @@
 import './style.css'
-import { createIcons, Mic, FileText, Download, Users, Smartphone, Monitor } from 'lucide';
+import { createIcons, Mic, FileText, Download, Users, Smartphone, Monitor, Languages, Globe } from 'lucide';
 import { renderRecordingView } from './RecordingView';
 import { renderAnalysisView } from './AnalysisView';
 import { renderExportView } from './ExportView';
 import { renderLiveTransView } from './LiveTransView';
+import { renderGlossaryView } from './GlossaryView';
 import { appState } from './state';
 
 document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
@@ -33,6 +34,7 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
   <div class="parent-tabs-container">
     <button id="p-tab-minutes" class="parent-tab-btn active">Meeting Minutes</button>
     <button id="p-tab-interpreter" class="parent-tab-btn">AI Interpreter</button>
+    <button id="p-tab-glossary" class="parent-tab-btn">Glossary</button>
   </div>
 
   <div id="sub-tabs-area" class="sub-tabs-container">
@@ -44,7 +46,7 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
 `
 
 createIcons({
-  icons: { Mic, FileText, Download, Users, Smartphone, Monitor }
+  icons: { Mic, FileText, Download, Users, Smartphone, Monitor, Globe, Languages }
 });
 
 const btnEnvToggle = document.getElementById('btn-env-toggle') as HTMLButtonElement;
@@ -61,13 +63,7 @@ function updateGlobalEnvUI() {
   }
   createIcons({
     icons: { Smartphone, Monitor },
-    nameAttr: 'data-lucide',
-    attrs: {
-      class: 'lucide',
-      'stroke-width': 2,
-      stroke: 'currentColor',
-      fill: 'none',
-    }
+    nameAttr: 'data-lucide'
   });
 }
 
@@ -134,8 +130,10 @@ const subTabConfig: Record<string, { id: string, label: string }[]> = {
     { id: 'export', label: '3. Export' }
   ],
   interpreter: [
-    { id: 'live', label: '1. Live Trans' },
-    { id: 'glossary', label: '2. Glossary' }
+    { id: 'live', label: '1. Live Trans' }
+  ],
+  glossary: [
+    { id: 'glossary-view', label: '1. Terminology Management' }
   ]
 };
 
@@ -149,41 +147,29 @@ export function switchSubTab(tabId: string) {
   else if (tabId === 'analyze') renderAnalysisView(mainContent);
   else if (tabId === 'export') renderExportView(mainContent);
   else if (tabId === 'live') renderLiveTransView(mainContent);
-  else if (tabId === 'glossary') {
-    mainContent.innerHTML = `
-      <div class="card" style="text-align: center; padding: 4rem;">
-        <i data-lucide="file-text" style="width: 64px; height: 64px; opacity: 0.1; margin-bottom: 1rem;"></i>
-        <h2 style="color: var(--text-muted);">Glossary Feature Coming Soon</h2>
-        <p style="color: var(--text-muted); opacity: 0.7;">실시간 통역 시 사용할 전문 용어 및 고유 명사 관리 기능이 준비 중입니다.</p>
-      </div>
-    `;
-    createIcons({ icons: { FileText } });
-  }
+  else if (tabId === 'glossary-view') renderGlossaryView(mainContent);
 }
 
 export function switchParentTab(parentId: string) {
   document.querySelectorAll('.parent-tab-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('p-tab-' + parentId)?.classList.add('active');
 
-  // Render Sub Tabs
   const config = subTabConfig[parentId];
   subTabsArea.innerHTML = config.map(t => 
     `<button id="sub-tab-${t.id}" class="sub-tab-btn">${t.label}</button>`
   ).join('');
 
-  // Add listeners to new sub tabs
   config.forEach(t => {
     document.getElementById('sub-tab-' + t.id)?.addEventListener('click', () => switchSubTab(t.id));
   });
 
-  // Default to first sub tab
   switchSubTab(config[0].id);
 }
 
 document.getElementById('p-tab-minutes')?.addEventListener('click', () => switchParentTab('minutes'));
 document.getElementById('p-tab-interpreter')?.addEventListener('click', () => switchParentTab('interpreter'));
+document.getElementById('p-tab-glossary')?.addEventListener('click', () => switchParentTab('glossary'));
 
-// Listen for custom events to automatically switch tabs when user completes a step
 window.addEventListener('recordingEnded', () => {
   if (document.getElementById('p-tab-minutes')?.classList.contains('active')) {
     switchSubTab('analyze');
@@ -196,13 +182,10 @@ window.addEventListener('analysisEnded', () => {
   }
 });
 
-// Render Sleep Prevention (Heartbeat)
 function startHeartbeat() {
   const backendHost = import.meta.env.VITE_BACKEND_URL || `${window.location.hostname}:8000`;
   const backendURL = `${window.location.protocol}//${backendHost}/`;
-  
   fetch(backendURL).catch(() => {});
-
   setInterval(() => {
     fetch(backendURL).catch(() => {});
     console.log("Heartbeat sent to Render backend to prevent sleep.");
@@ -210,6 +193,4 @@ function startHeartbeat() {
 }
 
 startHeartbeat();
-
-// Initial Load
 switchParentTab('minutes');

@@ -590,7 +590,27 @@ export function renderRecordingView(container: HTMLElement) {
     const wsPromise = new Promise<WebSocket>((resolve, reject) => {
         const socket = new WebSocket(`${wsProtocol}//${backendHost}/ws/record`);
         socket.onopen = () => {
-            socket.send(JSON.stringify({ type: "init", inputLang, translateLang, apiKey: appState.openaiApiKey, customVocab }));
+            // Collect relevant glossary terms (Global + currently relevant languages)
+            const globalTerms = appState.glossary['Global'] || [];
+            const inputLangName = inputLang === 'ko' ? 'Korean' : (inputLang === 'pl' ? 'Polish' : 'English');
+            const targetLangName = translateLang === 'ko' ? 'Korean' : (translateLang === 'pl' ? 'Polish' : 'English');
+            
+            const inputTerms = appState.glossary[inputLangName] || [];
+            const targetTerms = appState.glossary[targetLangName] || [];
+            
+            const combinedGlossary = [...globalTerms, ...inputTerms, ...targetTerms].map(t => ({
+                source: t.source,
+                target: t.target
+            }));
+
+            socket.send(JSON.stringify({ 
+                type: "init", 
+                inputLang, 
+                translateLang, 
+                apiKey: appState.openaiApiKey, 
+                customVocab,
+                glossary: combinedGlossary
+            }));
             resolve(socket);
         };
         socket.onerror = () => reject(new Error("STT 서버 연결에 실패했습니다. (Check backend/internet)"));

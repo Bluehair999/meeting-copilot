@@ -32,8 +32,8 @@ async def websocket_record(websocket: WebSocket):
     await websocket.accept()
     input_lang = "ko"
     translate_lang = "none"
-    custom_vocab = ""
     last_transcript = "" # 3조 역할 (이전 문맥 기억용)
+    glossary = [] # [{source, target}]
     
     try:
         ws_api_key = None
@@ -49,6 +49,8 @@ async def websocket_record(websocket: WebSocket):
                     ws_api_key = init_data["apiKey"].strip()
                 if "customVocab" in init_data and init_data["customVocab"].strip():
                     custom_vocab = init_data["customVocab"].strip()
+                if "glossary" in init_data:
+                    glossary = init_data["glossary"]
             except Exception:
                 pass
                 
@@ -163,15 +165,16 @@ async def websocket_record(websocket: WebSocket):
                             # 그 외 언어는 기존 설정된 translate_lang 유지 또는 기본값
                             current_target_lang = translate_lang if translate_lang != "none" else "en"
 
-                    if current_target_lang == "none":
-                        await websocket.send_json({
-                            "text": original_text,
-                            "source_lang": detected_lang_code
-                        })
                     else:
+                        glossary_prompt = ""
+                        if glossary:
+                            terms = "\n".join([f"- {g.get('source')}: {g.get('target')}" for g in glossary])
+                            glossary_prompt = f"\n[Glossary / Terminology]\nUse these specific translations if they appear in the source:\n{terms}\n"
+
                         system_prompt = f"""You are a strict and highly accurate translator.
 The original text is strictly in the '{detected_lang_code}' language.
 You must translate this text directly into the '{current_target_lang}' language.
+{glossary_prompt}
 Output ONLY the final translated text in '{current_target_lang}'.
 Do NOT output the original language, and do NOT add any conversational fillers or explanations.
 """
