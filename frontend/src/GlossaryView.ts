@@ -428,7 +428,7 @@ export function renderGlossaryView(container: HTMLElement) {
         if (!file) return;
 
         const reader = new FileReader();
-        reader.onload = (event) => {
+        reader.onload = async (event) => {
             const csv = event.target?.result as string;
             const lines = csv.split('\n');
             const newTerms: any[] = [];
