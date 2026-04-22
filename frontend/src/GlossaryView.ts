@@ -12,19 +12,19 @@ export function renderGlossaryView(container: HTMLElement) {
                     <h2 style="display: flex; align-items: center; gap: 0.5rem;">
                         <i data-lucide="globe" style="color: var(--primary-color);"></i> Terminology AI Glossary
                     </h2>
-                    <div class="flex-row gap-0-5" style="flex-wrap: nowrap; align-items: center;">
-                        <button id="btn-ai-extract" class="btn btn-sm" style="background: var(--primary-color); color: white; border-color: var(--primary-color); font-weight: bold; white-space: nowrap; flex-shrink: 0;">
-                            <i data-lucide="sparkles"></i> AI Extract (${appState.script.length})
+                    <div class="flex-row gap-1" style="flex-wrap: nowrap; align-items: center;">
+                        <button id="btn-ai-extract" class="btn btn-sm" style="background: var(--primary-color); color: white; border-color: var(--primary-color); font-weight: bold; font-size: 0.75rem; white-space: nowrap; flex-shrink: 0;">
+                            <i data-lucide="sparkles" style="width: 14px; height: 14px;"></i> AI Extract (${appState.script.length})
                         </button>
-                        <button id="btn-delete-selected" class="btn btn-sm" style="border-color: var(--danger-color); color: var(--danger-color); white-space: nowrap; flex-shrink: 0;">
-                            <i data-lucide="trash-2"></i> Delete Selected
+                        <button id="btn-delete-selected" class="btn btn-sm" style="border-color: var(--danger-color); color: var(--danger-color); font-size: 0.75rem; white-space: nowrap; flex-shrink: 0;">
+                            <i data-lucide="trash-2" style="width: 14px; height: 14px;"></i> Delete Selected
                         </button>
-                        <label class="btn btn-sm" style="background: var(--surface-color-light); border-style: dashed; white-space: nowrap; flex-shrink: 0;">
-                            <i data-lucide="file-up"></i> Import CSV
+                        <label class="btn btn-sm" style="background: var(--surface-color-light); border-style: dashed; font-size: 0.75rem; white-space: nowrap; flex-shrink: 0;">
+                            <i data-lucide="file-up" style="width: 14px; height: 14px;"></i> Import CSV
                             <input type="file" id="glossary-import" accept=".csv" class="hidden">
                         </label>
-                        <button id="btn-add-term" class="btn btn-primary btn-sm" style="white-space: nowrap; flex-shrink: 0;">
-                            <i data-lucide="plus"></i> Add Term
+                        <button id="btn-add-term" class="btn btn-primary btn-sm" style="font-size: 0.75rem; white-space: nowrap; flex-shrink: 0;">
+                            <i data-lucide="plus" style="width: 14px; height: 14px;"></i> Add Term
                         </button>
                     </div>
                 </div>
