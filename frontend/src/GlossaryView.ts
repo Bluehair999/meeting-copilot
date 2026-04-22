@@ -423,7 +423,7 @@ export function renderGlossaryView(container: HTMLElement) {
     }
 
 
-    function handleCsvImport(e: Event) {
+    async function handleCsvImport(e: Event) {
         const file = (e.target as HTMLInputElement).files?.[0];
         if (!file) return;
 
