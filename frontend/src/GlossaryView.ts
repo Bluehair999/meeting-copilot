@@ -116,31 +116,41 @@ export function renderGlossaryView(container: HTMLElement) {
 
         document.getElementById('btn-delete-selected')?.addEventListener('click', deleteSelectedTerms);
 
-        // Initial load from backend if not already done
-        if (Object.keys(appState.glossary).length === 0) {
-            fetchSharedGlossary();
-        } else {
-            renderTerms();
-        }
+        // Always fetch from backend to ensure synchronization with others
+        fetchSharedGlossary();
     }
 
     async function fetchSharedGlossary() {
+        const glossaryContainer = document.getElementById('glossary-table-container');
+        if (glossaryContainer) glossaryContainer.style.opacity = '0.5';
+
         try {
             const backendHost = import.meta.env.VITE_BACKEND_URL || `${window.location.hostname}:8000`;
-            const resp = await fetch(`${window.location.protocol}//${backendHost}/api/glossary`);
+            const protocol = window.location.protocol === 'https:' ? 'https:' : 'http:';
+            const url = backendHost.startsWith('http') ? backendHost : `${protocol}//${backendHost}`;
+            
+            console.log("Fetching shared glossary from:", `${url}/api/glossary`);
+            const resp = await fetch(`${url}/api/glossary`);
+            if (!resp.ok) throw new Error(`HTTP error! status: ${resp.status}`);
+            
             const data = await resp.json();
             appState.glossary = data;
             renderTerms();
             // Also sync to local storage for quick access next time
             localStorage.setItem('glossary_data', JSON.stringify(appState.glossary));
-        } catch (e) {
+        } catch (e: any) {
             console.error("Failed to fetch shared glossary:", e);
             // Fallback to local storage if available
             const saved = localStorage.getItem('glossary_data');
-            if (saved) appState.glossary = JSON.parse(saved);
-            renderTerms();
+            if (saved && Object.keys(appState.glossary).length === 0) {
+                appState.glossary = JSON.parse(saved);
+                renderTerms();
+            }
+        } finally {
+            if (glossaryContainer) glossaryContainer.style.opacity = '1';
         }
     }
+
 
 
     const modal = () => document.getElementById('ai-extract-modal')!;
@@ -248,15 +258,29 @@ export function renderGlossaryView(container: HTMLElement) {
     async function syncTermsToBackend(terms: any[]) {
         try {
             const backendHost = import.meta.env.VITE_BACKEND_URL || `${window.location.hostname}:8000`;
-            await fetch(`${window.location.protocol}//${backendHost}/api/glossary`, {
+            const protocol = window.location.protocol === 'https:' ? 'https:' : 'http:';
+            const url = backendHost.startsWith('http') ? backendHost : `${protocol}//${backendHost}`;
+            
+            console.log("Syncing terms to backend...", terms.length);
+            const resp = await fetch(`${url}/api/glossary`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ terms })
             });
-        } catch (e) {
+            
+            if (!resp.ok) {
+                const errData = await resp.json().catch(() => ({}));
+                console.error("Backend sync failed:", resp.status, errData);
+                alert(`서버 동기화 실패 (${resp.status}): 다른 사용자에게는 보이지 않을 수 있습니다.`);
+            } else {
+                console.log("Backend sync successful.");
+            }
+        } catch (e: any) {
             console.error("Failed to sync terms to backend:", e);
+            alert(`서버 연결 오류: ${e.message}. 인터넷 연결이나 서버 상태를 확인해 주세요.`);
         }
     }
+
 
 
     function renderTerms() {
@@ -430,7 +454,7 @@ export function renderGlossaryView(container: HTMLElement) {
                 
                 appState.glossary[activeLang] = [...appState.glossary[activeLang], ...newTerms];
                 
-                syncTermsToBackend(termsToSync);
+                await syncTermsToBackend(termsToSync);
                 saveGlossary();
                 renderTerms();
                 alert(`${newTerms.length}개의 용어를 불러왔습니다. 모든 사용자에게 공유되었습니다.`);
