@@ -30,14 +30,16 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
     </div>
   </header>
   
-  <div class="tabs" style="display: flex; gap: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;">
-    <button id="tab-record" class="tab-btn active">1. Recording</button>
-    <button id="tab-live" class="tab-btn">2. Live Trans</button>
-    <button id="tab-analyze" class="tab-btn">3. AI Analysis</button>
-    <button id="tab-export" class="tab-btn">4. Export</button>
+  <div class="parent-tabs-container">
+    <button id="p-tab-minutes" class="parent-tab-btn active">Meeting Minutes</button>
+    <button id="p-tab-interpreter" class="parent-tab-btn">AI Interpreter</button>
   </div>
 
-  <main id="main-content" style="display: flex; flex-direction: column; gap: 1.5rem; flex-grow: 1; margin-top: 1rem;">
+  <div id="sub-tabs-area" class="sub-tabs-container">
+    <!-- Sub tabs will be injected here -->
+  </div>
+
+  <main id="main-content" style="display: flex; flex-direction: column; gap: 1.5rem; flex-grow: 1; margin-top: 0.5rem;">
   </main>
 `
 
@@ -123,31 +125,75 @@ if (apiKeyInput && btnApiConfirm && btnApiDelete) {
 }
 
 const mainContent = document.getElementById('main-content')!;
+const subTabsArea = document.getElementById('sub-tabs-area')!;
 
-export function switchTab(tabId: 'record' | 'live' | 'analyze' | 'export') {
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById('tab-' + tabId)?.classList.add('active');
+const subTabConfig: Record<string, { id: string, label: string }[]> = {
+  minutes: [
+    { id: 'record', label: '1. Recording' },
+    { id: 'analyze', label: '2. AI Analysis' },
+    { id: 'export', label: '3. Export' }
+  ],
+  interpreter: [
+    { id: 'live', label: '1. Live Trans' },
+    { id: 'glossary', label: '2. Glossary' }
+  ]
+};
+
+export function switchSubTab(tabId: string) {
+  document.querySelectorAll('.sub-tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('sub-tab-' + tabId)?.classList.add('active');
   
   mainContent.innerHTML = '';
   
   if (tabId === 'record') renderRecordingView(mainContent);
-  else if (tabId === 'live') renderLiveTransView(mainContent);
   else if (tabId === 'analyze') renderAnalysisView(mainContent);
   else if (tabId === 'export') renderExportView(mainContent);
+  else if (tabId === 'live') renderLiveTransView(mainContent);
+  else if (tabId === 'glossary') {
+    mainContent.innerHTML = `
+      <div class="card" style="text-align: center; padding: 4rem;">
+        <i data-lucide="file-text" style="width: 64px; height: 64px; opacity: 0.1; margin-bottom: 1rem;"></i>
+        <h2 style="color: var(--text-muted);">Glossary Feature Coming Soon</h2>
+        <p style="color: var(--text-muted); opacity: 0.7;">실시간 통역 시 사용할 전문 용어 및 고유 명사 관리 기능이 준비 중입니다.</p>
+      </div>
+    `;
+    createIcons({ icons: { FileText } });
+  }
 }
 
-document.getElementById('tab-record')?.addEventListener('click', () => switchTab('record'));
-document.getElementById('tab-live')?.addEventListener('click', () => switchTab('live'));
-document.getElementById('tab-analyze')?.addEventListener('click', () => switchTab('analyze'));
-document.getElementById('tab-export')?.addEventListener('click', () => switchTab('export'));
+export function switchParentTab(parentId: string) {
+  document.querySelectorAll('.parent-tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('p-tab-' + parentId)?.classList.add('active');
+
+  // Render Sub Tabs
+  const config = subTabConfig[parentId];
+  subTabsArea.innerHTML = config.map(t => 
+    `<button id="sub-tab-${t.id}" class="sub-tab-btn">${t.label}</button>`
+  ).join('');
+
+  // Add listeners to new sub tabs
+  config.forEach(t => {
+    document.getElementById('sub-tab-' + t.id)?.addEventListener('click', () => switchSubTab(t.id));
+  });
+
+  // Default to first sub tab
+  switchSubTab(config[0].id);
+}
+
+document.getElementById('p-tab-minutes')?.addEventListener('click', () => switchParentTab('minutes'));
+document.getElementById('p-tab-interpreter')?.addEventListener('click', () => switchParentTab('interpreter'));
 
 // Listen for custom events to automatically switch tabs when user completes a step
 window.addEventListener('recordingEnded', () => {
-  switchTab('analyze');
+  if (document.getElementById('p-tab-minutes')?.classList.contains('active')) {
+    switchSubTab('analyze');
+  }
 });
 
 window.addEventListener('analysisEnded', () => {
-  switchTab('export');
+  if (document.getElementById('p-tab-minutes')?.classList.contains('active')) {
+    switchSubTab('export');
+  }
 });
 
 // Render Sleep Prevention (Heartbeat)
@@ -155,10 +201,8 @@ function startHeartbeat() {
   const backendHost = import.meta.env.VITE_BACKEND_URL || `${window.location.hostname}:8000`;
   const backendURL = `${window.location.protocol}//${backendHost}/`;
   
-  // Initial wake-up ping
   fetch(backendURL).catch(() => {});
 
-  // Ping every 10 minutes (600,000ms) to stay within Render's 15min timeout
   setInterval(() => {
     fetch(backendURL).catch(() => {});
     console.log("Heartbeat sent to Render backend to prevent sleep.");
@@ -167,4 +211,5 @@ function startHeartbeat() {
 
 startHeartbeat();
 
-switchTab('record');
+// Initial Load
+switchParentTab('minutes');
